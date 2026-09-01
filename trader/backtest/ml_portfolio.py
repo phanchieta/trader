@@ -18,17 +18,25 @@ from .portfolio import PortfolioResult
 def run_target_portfolio(frames: dict, target: pd.DataFrame, costs: B3Costs, *,
                          initial_equity: float = 100_000.0, lot_size: int = 100,
                          overlay_mult: pd.Series | None = None,
-                         trailing_stop: float | None = None) -> PortfolioResult:
+                         trailing_stop: float | None = None,
+                         cash_rate: pd.Series | None = None,
+                         target_is_weight: bool = False) -> PortfolioResult:
     syms = list(frames)
     idx = target.index
     n = len(syms)
 
-    open_ = {s: frames[s]["open"].reindex(idx).to_numpy(dtype="float64") for s in syms}
-    close = {s: frames[s]["close"].reindex(idx).to_numpy(dtype="float64") for s in syms}
+    # nan_to_num: nomes sem dados na janela viram preço 0 (o guard po>0 impede comprar,
+    # e 0*0 no mark-to-market não vira NaN)
+    open_ = {s: np.nan_to_num(frames[s]["open"].reindex(idx).to_numpy(dtype="float64"))
+             for s in syms}
+    close = {s: np.nan_to_num(frames[s]["close"].reindex(idx).to_numpy(dtype="float64"))
+             for s in syms}
     tgt = {s: target[s].reindex(idx).fillna(0.0).shift(1).fillna(0.0).to_numpy()
            for s in syms}
     mult = (overlay_mult.reindex(idx).fillna(0.0).to_numpy(dtype="float64")
             if overlay_mult is not None else np.ones(len(idx)))
+    rate = (cash_rate.reindex(idx).ffill().fillna(0.0).to_numpy(dtype="float64")
+            if cash_rate is not None else np.zeros(len(idx)))
 
     cash = float(initial_equity)
     shares = {s: 0.0 for s in syms}
@@ -40,8 +48,9 @@ def run_target_portfolio(frames: dict, target: pd.DataFrame, costs: B3Costs, *,
     fees_total = 0.0
 
     for i in range(len(idx)):
+        cash *= 1.0 + rate[i]
         mtm = cash + sum(shares[s] * open_[s][i] for s in syms)
-        per_name = mtm / n
+        budget = mtm if target_is_weight else mtm / n
         for s in syms:
             po = open_[s][i]
             raw_t = tgt[s][i]
@@ -51,7 +60,7 @@ def run_target_portfolio(frames: dict, target: pd.DataFrame, costs: B3Costs, *,
 
             desired = 0.0
             if eff_t != 0.0 and po > 0.0 and mult[i] > 0.0:
-                desired = np.trunc(per_name * eff_t * mult[i] / po / lot_size) * lot_size
+                desired = np.trunc(budget * eff_t * mult[i] / po / lot_size) * lot_size
             delta = desired - shares[s]
             if delta != 0.0:
                 fee = costs.order_cost(po, delta)

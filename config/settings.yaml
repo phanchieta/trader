@@ -49,9 +49,31 @@ universe:
             RADL3, GGBR4, GOAU4, CSNA3, USIM5, ELET3, CMIG4, CPLE6, UGPA3, VIVT3,
             EMBR3, JBSS3, CCRO3, TOTS3]
 
+factor_universe:
+  # ~110 nomes líquidos da B3 para o modelo de fatores (rankear entre eles).
+  symbols: [PETR4, PETR3, VALE3, ITUB4, ITSA4, BBDC4, BBDC3, BBAS3, B3SA3, ABEV3,
+            WEGE3, RENN3, LREN3, MGLU3, RADL3, RAIL3, SUZB3, GGBR4, GOAU4, CSNA3,
+            USIM5, CMIG4, CPLE6, ELET3, ELET6, EQTL3, EGIE3, TAEE11, CPFE3, SBSP3,
+            UGPA3, VBBR3, PRIO3, CSAN3, BRAP4, KLBN11, EMBR3, POMO4, RAPT4, TUPY3,
+            LEVE3, KEPL3, ROMI3, JBSS3, MRFG3, BRFS3, BEEF3, SLCE3, SMTO3, CAML3,
+            AGRO3, MDIA3, ABCB4, BPAC11, BRSR6, SANB11, PSSA3, BBSE3, IRBR3, CIEL3,
+            ASAI3, CRFB3, PCAR3, GUAR3, ALPA4, CVCB3, MOVI3, RENT3, ECOR3, CCRO3,
+            AZUL4, GOLL4, TOTS3, LWSA3, POSI3, TIMS3, VIVT3, OIBR3, CYRE3, MRVE3,
+            EZTC3, EVEN3, GFSA3, JHSF3, DIRR3, MULT3, ALSO3, LOGG3, HYPE3, FLRY3,
+            RDOR3, HAPV3, DASA3, QUAL3, ODPV3, PNVL3, ENEV3, AURE3, STBP3, LOGN3,
+            HBSA3, TEND3, GGPS3, PORT3, MYPK3, FRAS3, SHUL4, EALT4, RANI3, DTEX3,
+            SIMH3, VAMO3, PETZ3, VULC3, CEAB3, VIVA3, ARZZ3, SOMA3, CASH3, IFCM3]
+
 risk:
   risco_por_trade_pct: 0.005
   perda_maxima_diaria_pct: 0.02
+
+futures:
+  ibov_proxy: "^BVSP"            # Yahoo — proxy do WIN
+  usdbrl_proxy: "USDBRL=X"       # Yahoo — proxy do WDO
+  cost_bps_stock: 8.0            # custo round-trip por giro de posição (bps)
+  cost_bps_future: 3.0
+  max_leverage: 2.0             # trend multi-ativo com futuro pode alavancar
 
 risk_overlay:
   target_ann_vol: 0.15      # alvo de volatilidade anualizada da carteira

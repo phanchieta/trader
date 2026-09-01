@@ -123,7 +123,69 @@ efeito valor no corte transversal.)
   universo B3 inteiro (100+ nomes), features fora do preço (fundamentos, fluxo),
   sizing pela magnitude do score. Engavetado.
 
-### 11. Otimização do sizing (`optimize_champion.py`)
+### 11. WIN / WDO (mini-índice / mini-dólar) — **NÃO AJUDAM**
+Engine novo baseado em retornos (`backtest/trend_portfolio.py`) — long/short,
+alavancagem, vol-target auto-referente. Proxies do Yahoo: `^BVSP` (Ibov) e
+`USDBRL=X` (dólar). Walk-forward, CDI no caixa:
+- só ações (ref): Sharpe/CDI 0,44 | ações + USDBRL: 0,39 | ações + IBOV + USDBRL: 0,27.
+- **IBOV + USDBRL sozinhos (macro puro): Sharpe/CDI −0,52, −28% de drawdown, CAGR
+  2,7% — muito abaixo do CDI.**
+- Alavancagem 3×: pior (0,25 / −28%).
+- Motivos: (a) Ibov ≈ a cesta (correlação ~0,9, redundante); (b) trend-following
+  no USD/BRL perde — moeda de carry, sobe devagar e cai violento, toma chicotada;
+  (c) 2–3 instrumentos é pouco — CTA de verdade roda 50–100+ mercados globais.
+- Ressalva: proxies do Yahoo, não o futuro real; eficiência de capital / shortear
+  fácil não aparece como retorno neste teste. Mas não flipa a conclusão.
+
+### 12. Modelo de fatores cross-sectional (universo B3 grande) — **FUNCIONA**
+`factors/library.py` + `factors/backtest.py` + `scripts/factor_model.py` /
+`factor_tuning.py`. Universo: 98 ações (`config factor_universe`; 22 de 120
+falharam no Yahoo → **viés de sobrevivência** que infla os retornos). Rebalance
+periódico, top quintil long-only equal-weight, vol-target + CDI no caixa.
+
+Fatores de preço (walk-forward, janela longa ~2011–2026):
+| fator | Sharpe/CDI | alpha | maxDD |
+|---|---|---|---|
+| **momentum (12-1)** | 0,59 | +8,8% | −24% |
+| **combinado 5 fatores** | **0,69** (trimestral) | +8,8% | −15% |
+| low_vol | 0,31 | +2,9% | −14% |
+| low_beta | 0,33 | +3,3% | −21% |
+| lt_reversal (loser 3a = proxy valor) | 0,07 | −0,6% | −50% (value trap) |
+| st_reversal (contrário 1 mês) | **−0,29** | −7% | −58% (reversão falha de novo) |
+
+**Momentum cross-sectional funciona COM BREADTH** — falhou com 19 nomes (−71% DD),
+funciona com ~98. Antes a conclusão "precisa de 500+" era pessimista demais; ~100
+basta na B3.
+
+**Tuning** (`factor_tuning.py`):
+- **rebalance trimestral > mensal** (0,69 vs 0,59) — menos giro, menos IR. Mantido.
+- **quintil > decil** (0,69 vs 0,23) — decil concentra demais.
+- **vol-target pela vol do Ibov > pela vol do book** na janela longa (drawdown menor).
+- **hedge de índice (WIN short): atrapalha tudo** (0,66 → 0,26). Shortear índice BR
+  sistemático perde. Confirmado.
+
+### 13. Portfólio de 2 sleeves: campeão + fatores (`two_sleeve.py`)
+Correlação diária das duas sleeves = **0,41** (finalmente descorrelacionado).
+Janela OOS longa e honesta:
+| mix | Sharpe/CDI | alpha | maxDD |
+|---|---|---|---|
+| campeão só | 0,41 | +2,7% | −6,1% |
+| fatores só | 0,69 | +8,8% | −15,1% |
+| 30% fatores / 70% campeão | 0,64 | +4,7% | −6,7% |
+| **50 / 50** | **0,69** | +5,9% | **−9,1%** |
+| 70% fatores / 30% campeão | 0,70 | +7,1% | −11,5% |
+
+O blend **não bate os fatores em Sharpe/CDI, mas corta o drawdown pela metade**
+(50/50: mesmo 0,69 com −9% em vez de −15%). É o melhor risk-adjusted do projeto.
+**Teto realista encontrado: Sharpe sobre o CDI ~0,7.** (Os 0,94/1,01 de um teste
+anterior eram janela favorável 2016+.)
+
+### 14. Fundamentos (valor / qualidade)
+brapi.dev free dá só fundamento ATUAL (P/L, LPA, market cap), não série histórica —
+não dá para backtestar. Caminho prático = dividend yield (Yahoo tem histórico de
+proventos). **Pendente.**
+
+### 15. Otimização do sizing do campeão (`optimize_champion.py`)
 Grid walk-forward, CDI no caixa, objetivo = Sharpe sobre o CDI. Knobs: vol-alvo,
 janela da vol, alavancagem, peso por ação.
 - **Sharpe sobre o CDI trava em ~0,55–0,59** em toda a faixa sensata. Não há
@@ -196,15 +258,27 @@ real cai para ~+2,5–3,5% a.a. Custo de fundo/Tesouro para guardar o caixa: −
 7. **Trailing-stop é dependente do sinal** — ajuda MA crossover, atrapalha
    trend-following puro.
 
+## Estado da pesquisa (2026-09-01)
+
+**Dois programas validados:**
+1. **Campeão** — 5 ações + SuperTrend + vol-target YZ. Sharpe/CDI ~0,4–0,6
+   (depende da janela), drawdown ~−6%. Rodando no paper-trade.
+2. **Modelo de fatores** — universo B3 (~98 nomes), combinado 5 fatores, quintil,
+   rebalance trimestral, vol-target Ibov + CDI. Sharpe/CDI ~0,69, drawdown −15%.
+
+**Melhor risk-adjusted: blend 50/50 dos dois** — Sharpe/CDI ~0,7, drawdown −9%,
+alpha +6% a.a. (pré-imposto, pré-ajuste de sobrevivência). É o teto do projeto.
+
 ## Fios em aberto
 
-- **WIN / WDO** (mini-índice / mini-dólar): trend + vol-target portam direto;
-  precisa de fonte de dados de futuro no MT5, modelo de custo de futuro, rolagem.
-  Adiciona diversificação real (ações + índice + dólar).
-- **Universo B3 inteiro** (~100–150 nomes) + modelo de fatores de verdade
-  (momentum + baixa-vol + valor com fundamentos). Cross-sectional falhou com 19;
-  com 100+ e fatores é projeto de pesquisa sério.
-- **Overlay de evento (eleição)** — reduzir exposição em janela de alta incerteza
-  conhecida. Ver discussão à parte; não é backtestável (N pequeno).
-- **Portfólio de estratégias** — combinar o trend atual com um sinal de fator
-  descorrelacionado.
+- **WIN / WDO**: testado (proxies ^BVSP / USDBRL=X) — **não ajuda** (§11).
+- **Fatores fundamentalistas** (valor/qualidade): brapi free não tem histórico;
+  fazer via dividend yield (Yahoo).
+- **Corrigir o universo de fatores** — 22 tickers faltando no Yahoo (viés de
+  sobrevivência). Tentar outra fonte / outro formato de ticker.
+- **Overlay de evento (eleição out/2026)** — reduzir exposição na janela; não é
+  backtestável (N pequeno). Ver discussão à parte.
+- **Paper-trade do blend** — hoje o paper roda só o campeão. Adicionar a sleeve de
+  fatores exige um executor cross-sectional ao vivo.
+- **IR e viés de sobrevivência**: ajustar os números para depois de imposto e para
+  o universo real antes de qualquer capital de verdade.

@@ -1,44 +1,44 @@
-# trader — automação PETR4 (MT5 + Python)
+# trader — trade sistemático B3 (MT5 + Python)
 
-Estratégia baseada em **regras primeiro**, ML depois. O backtest não depende do
-MT5; o MT5 entra como fonte read-only e, na Fase 3, como execução (só em conta demo).
+Programa de trend swing em ações da B3. Ver **`RESEARCH_LOG.md`** para o histórico
+completo da pesquisa (o que foi testado e os vereditos).
 
 ## Setup
 
 ```bash
-python -m venv .venv
-.venv\Scripts\activate          # Windows
-pip install -e ".[mt5,dev]"     # MT5 só funciona no Windows
+conda activate trade                       # env com pandas/MetaTrader5/lightgbm/...
+pip install -e ".[mt5,ml,dev]"
 ```
 
-## Fluxo atual (Fase 0 → 1)
+## CAMPEÃO
 
-Rode sempre da **raiz do repo**.
+Cesta de 5 (PETR4, VALE3, ITUB4, BBDC4, ABEV3) + **SuperTrend(10, 3×) long-only +
+vol-target Yang-Zhang (alvo 0,15) + equal-weight, sem trailing**.
+
+Walk-forward OOS 2015–2026, CDI creditado no caixa: **CDI + ~4% a.a., max drawdown
+~−5%, Sharpe sobre o CDI ~0,6, ~25–33% investido** (resto em caixa rendendo CDI).
+Pré-imposto. Rodando no paper-trade da conta demo.
+
+## Scripts (rodar da raiz do repo)
+
+**Dados** — `pull_daily` `pull_basket` `pull_universe` `pull_factor_universe`
+`pull_futures_proxy` `pull_cdi` `pull_mt5_history` `pull_intraday`
+
+**Pesquisa** — `research_strategies` (trend family + vol-target) ·
+`research_cross_sectional` (momentum cross-sectional — falhou) · `research_futures`
+(WIN/WDO — não ajudou) · `factor_model` (fatores B3 no universo grande) ·
+`ml_baseline` / `ml_experiment` (LightGBM — AUC 0,54, não bate a regra) ·
+`compare_horizons` `deep_dive` `validate` `validate_intraday`
+
+**Campeão** — `stress_champion` (robustez) · `champion_vs_cdi` (alpha sobre o CDI
+por nível de risco) · `optimize_champion` (otimização do sizing)
+
+**Ao vivo** — `check_corretora` · `demo_round_trip` · `paper_trade` (dry-run;
+`--send` envia) · `paper_report` (tracking error vs backtest) · `collect_intraday`
 
 ```bash
-python scripts/pull_daily.py        # histórico diário PETR4 (Yahoo) -> data/petr4_d1.parquet
-python scripts/pull_intraday.py     # backfill intraday (Yahoo 15m, ~60 pregões)
-python scripts/run_backtest.py      # backtest do baseline (SMA) + métricas
-python scripts/validate.py          # validação OOS das estratégias diárias
-python scripts/validate_intraday.py # validação OOS do breakout de abertura (15m)
-python scripts/compare_horizons.py  # mesmas estratégias em D1/M15/M5, OOS, custo por horizonte
-python scripts/deep_dive.py         # walk-forward 8 folds + Sharpe por fold + retorno por ano
-python scripts/pull_basket.py       # histórico diário das 5 ações da cesta
-python scripts/pull_universe.py     # ~24 ações para o cross-sectional / treino de ML
-python scripts/research_strategies.py    # SuperTrend / Keltner / Vortex + vol-target Yang-Zhang
-python scripts/stress_champion.py        # stress-test do campeão (SuperTrend + YZ vol-target)
-python scripts/research_cross_sectional.py  # momentum cross-sectional (não funcionou)
-python scripts/ml_baseline.py       # Fase C: LightGBM walk-forward vs campeão
-pytest                              # 112 testes
+pytest        # 128 testes
 ```
-
-**Horizonte = swing** (decidido): no intraday o custo come 30–82% do lucro bruto e nenhum
-resultado sobrevive ao walk-forward.
-
-**Campeão atual:** cesta de 5 (PETR4, VALE3, ITUB4, BBDC4, ABEV3) + **SuperTrend + vol-target
-Yang-Zhang** → Sharpe OOS realista ~0,7–0,85, drawdown ~−12%, sem ano de desastre em 16 anos
-de walk-forward. O overlay de vol-target com estimador Yang-Zhang (usa o OHLC inteiro)
-melhora *todos* os sinais de tendência — é o maior lever isolado.
 
 **Não ajudaram:** reversão à média (B3 segue, não reverte), ensembles (sinais trend
 correlacionados), filtros de força de tendência (ER gate, ADX), momentum cross-sectional
