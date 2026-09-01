@@ -157,6 +157,11 @@ Fatores de preço (walk-forward, janela longa ~2011–2026):
 funciona com ~98. Antes a conclusão "precisa de 500+" era pessimista demais; ~100
 basta na B3.
 
+**div_yield** (DY 12m, dados do Yahoo): Sharpe/CDI 0,36, alpha +2,7% — fator real
+mas fraco. **Adicionar ao combinado NÃO muda nada** (COMBINADO 5 = COMBINADO 6):
+DY é correlacionado com low-vol/low-beta (pagadoras de dividendo são utilities e
+bancos de baixa vol), não traz informação nova.
+
 **Tuning** (`factor_tuning.py`):
 - **rebalance trimestral > mensal** (0,69 vs 0,59) — menos giro, menos IR. Mantido.
 - **quintil > decil** (0,69 vs 0,23) — decil concentra demais.
@@ -181,9 +186,27 @@ O blend **não bate os fatores em Sharpe/CDI, mas corta o drawdown pela metade**
 anterior eram janela favorável 2016+.)
 
 ### 14. Fundamentos (valor / qualidade)
-brapi.dev free dá só fundamento ATUAL (P/L, LPA, market cap), não série histórica —
-não dá para backtestar. Caminho prático = dividend yield (Yahoo tem histórico de
-proventos). **Pendente.**
+brapi.dev free dá só fundamento ATUAL (P/L, LPA, market cap), não série histórica.
+Caminho usado: **dividend yield** (Yahoo tem histórico de proventos — 96 ações,
+4242 eventos, `data/dividends.parquet`, `scripts/pull_dividends.py`). Adicionado
+como fator `div_yield` (DY 12m). Ver §12 para o resultado do combinado 6 fatores.
+
+### 14b. Overlay de eleição — **NÃO AJUDA** (`scripts/election_test.py`)
+Haircut pré-comprometido: exposição × 0,5 de 15/set a 20/nov nos anos eleitorais
+(2010/14/18/22). Walk-forward:
+- campeão: Sharpe/CDI 0,49, maxDD −7,0%.
+- campeão + haircut: Sharpe/CDI 0,48, maxDD −7,0% (praticamente idêntico).
+- 2018 (set–dez): sem haircut +5,7%, com haircut +3,4% — **custou** (Bolsonaro
+  eleito, bolsa subiu). 2022: +3,4% vs +3,8% — ajudou de leve.
+**O vol-target do próprio campeão já lida com a vol da eleição.** Um calendário
+fixo é tão provável de atrapalhar quanto de ajudar. Não implementar.
+
+### 14c. Viés de sobrevivência do universo de fatores
+Retry recuperou 4 sucessores por mudança de ticker (DXCO3←DTEX3, AZZA3←ARZZ3/SOMA3,
+MBRF3←MRFG3/BRFS3, MOTV3←CCRO3). **~14 nomes vivos que o Yahoo não serve** (ELET3,
+EMBR3, JBSS3, RENN3, …) + zero deslistados de verdade (CIEL3, CRFB3 fecharam
+capital). Corrigir de vez precisa de base point-in-time paga ou dos arquivos
+COTAHIST da B3. **O alpha dos fatores está otimista em ~1–3 pp por causa disso.**
 
 ### 15. Otimização do sizing do campeão (`optimize_champion.py`)
 Grid walk-forward, CDI no caixa, objetivo = Sharpe sobre o CDI. Knobs: vol-alvo,
@@ -261,13 +284,24 @@ real cai para ~+2,5–3,5% a.a. Custo de fundo/Tesouro para guardar o caixa: −
 ## Estado da pesquisa (2026-09-01)
 
 **Dois programas validados:**
-1. **Campeão** — 5 ações + SuperTrend + vol-target YZ. Sharpe/CDI ~0,4–0,6
-   (depende da janela), drawdown ~−6%. Rodando no paper-trade.
+1. **Campeão** — 5 ações + SuperTrend + vol-target YZ. Sharpe/CDI ~0,4–0,6, drawdown
+   ~−6%. Rodando no paper-trade.
 2. **Modelo de fatores** — universo B3 (~98 nomes), combinado 5 fatores, quintil,
    rebalance trimestral, vol-target Ibov + CDI. Sharpe/CDI ~0,69, drawdown −15%.
 
-**Melhor risk-adjusted: blend 50/50 dos dois** — Sharpe/CDI ~0,7, drawdown −9%,
-alpha +6% a.a. (pré-imposto, pré-ajuste de sobrevivência). É o teto do projeto.
+**Depois do IR** (aprox. 15,5% mensal, prejuízo compensável — `scripts/after_tax.py`):
+
+| programa | alpha vs CDI pré-IR | **alpha pós-IR** | maxDD |
+|---|---|---|---|
+| campeão | +2,7% | **+1,5%** | −6% |
+| fatores | +8,8% | **+7,2%** | −15% |
+| blend 50/50 | +5,9% | **+4,5%** | −9% |
+
+**Conclusão:** o **campeão sozinho mal supera o CDI depois do imposto** (+1,5% a.a.)
+— é redução de risco, não prêmio de retorno. O **modelo de fatores / blend batem o
+CDI de forma real** (+4,5 a +7,2% pós-IR), e depois de descontar o viés de
+sobrevivência (~1–3 pp) ainda sobra **~CDI + 3–5% a.a. pós tudo**, com drawdown
+−9 a −15%. Sharpe sobre o CDI ~0,7 (pré-IR) é o teto do projeto.
 
 ## Fios em aberto
 

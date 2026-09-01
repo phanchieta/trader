@@ -26,7 +26,22 @@ def test_factor_score_e_percentil():
         assert sc.shape[1] == len(u)
         v = sc.iloc[300:].to_numpy()
         v = v[np.isfinite(v)]
+        if name == "div_yield":            # sem parquet de proventos -> tudo NaN, ok
+            assert v.size == 0
+            continue
         assert v.min() >= 0.0 and v.max() <= 1.0
+
+
+def test_div_yield_com_proventos():
+    u = _universe()
+    div = pd.DataFrame({
+        "symbol": ["S0", "S0", "S1"],
+        "ex_date": pd.to_datetime(["2010-06-01", "2011-06-01", "2011-06-01"], utc=True),
+        "amount": [3.0, 3.0, 0.5],
+    })
+    sc = factor_score(u, "div_yield", dividends=div)
+    late = sc.loc["2012-01-01":]
+    assert late["S0"].mean() > late["S1"].mean()      # S0 paga mais -> percentil maior
 
 
 def test_low_vol_favorece_ativo_calmo():

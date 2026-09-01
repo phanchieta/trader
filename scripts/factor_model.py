@@ -79,8 +79,13 @@ def evaluate(score_full: pd.DataFrame):
 
 
 mkt = IBOV["close"]
-CONFIGS = {f: factor_score(frames, f, mkt=mkt) for f in FACTORS}
-CONFIGS["COMBINADO"] = combined_score(frames, list(FACTORS), mkt=mkt)
+div_path = DATA / "dividends.parquet"
+DIV = pd.read_parquet(div_path) if div_path.exists() else None
+
+CONFIGS = {f: factor_score(frames, f, mkt=mkt, dividends=DIV) for f in FACTORS}
+CONFIGS["COMBINADO 5"] = combined_score(frames, [f for f in FACTORS if f != "div_yield"],
+                                        mkt=mkt)
+CONFIGS["COMBINADO 6 (+DY)"] = combined_score(frames, list(FACTORS), mkt=mkt, dividends=DIV)
 
 # referências
 champ_basket = {s: load(DATA / f"{s.lower()}_d1.parquet") for s in cfg["basket"]["symbols"]}
