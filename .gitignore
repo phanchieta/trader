@@ -16,4 +16,3 @@ venv/
 # editores
 .vscode/
 .idea/
-*.egg-info/
