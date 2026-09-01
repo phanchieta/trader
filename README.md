@@ -35,11 +35,15 @@ por nível de risco) · `optimize_champion` (otimização do sizing)
 
 **Ao vivo** — `check_corretora` · `demo_round_trip` · `paper_trade` (campeão;
 dry-run, `--send` envia) · `paper_blend` (blend campeão+fatores; estado próprio
-em `data/blend_state.json`) · `paper_report` · `collect_intraday`
+em `data/blend_state.json`) · `paper_blend_sim` (blend simulado, sem MT5, roda
+junto do campeão real) · `compare_paper` (campeão real vs blend sim vs CDI) ·
+`paper_report` · `collect_intraday`
 
-O `paper_blend` lê os parquets do universo de fatores — mantenha
-`pull_factor_universe.py` + `pull_futures_proxy.py` rodando (cron diário). Sleeve
-campeão diária; sleeve de fatores rebalanceia por trimestre-calendário.
+O `paper_blend`/`paper_blend_sim` leem os parquets do universo de fatores —
+mantenha `pull_factor_universe.py` + `pull_futures_proxy.py` rodando (cron diário).
+Sleeve campeão diária; sleeve de fatores rebalanceia por trimestre-calendário.
+**Hoje:** campeão envia de verdade na demo; blend só no simulador (os dois não
+podem enviar na mesma conta). Ver "Rodar os dois em paralelo" no RESEARCH_LOG.
 
 ```bash
 pytest        # 128 testes

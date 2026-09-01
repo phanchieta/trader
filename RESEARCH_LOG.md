@@ -313,19 +313,53 @@ sobrevivência (~1–3 pp) ainda sobra **~CDI + 3–5% a.a. pós tudo**, com dra
 Estado/diário separados do `paper_trade.py` (`blend_state.json` / `blend_journal.csv`).
 Dry-run offline (equity R$1M): 21 posições (3 campeão + 20 fatores, 3 sobrepostas),
 ~59% investido. Lê os parquets do universo — precisa de `pull_factor_universe.py`
-rodando diariamente. **Pendente: rodar o dry-run com o MT5 aberto e trocar a
-tarefa agendada de `paper_trade_daily.bat` para `paper_blend_daily.bat`.**
+rodando diariamente.
+
+## Rodar os dois em paralelo (conservador vs mais risco)
+
+Pergunta: deixar o **campeão** (conservador) e o **blend** (mais risco / mais
+retorno) rodando ao mesmo tempo?
+
+**Não dá para os dois enviarem ordem na mesma conta demo** — os dois miram
+PETR4/VALE3/BBDC4 e o `reconcile` de cada um enxergaria a posição do outro como
+divergência e tentaria "corrigir". Brigariam pelo sizing.
+
+Solução adotada: **campeão continua enviando de verdade** na demo
+(`paper_trade.py --send`, tarefa `trader-paper-trade`); **o blend roda em
+simulação** — `scripts/paper_blend_sim.py`: sem MT5, sem ordem, marca a carteira a
+fechamento pelos parquets, credita CDI no caixa, aplica 8 bps de custo de giro.
+Estado em `data/blend_sim.json`, curva em `data/blend_sim_equity.csv`, começa no
+mesmo capital do campeão (lido do `paper_journal.csv`). `scripts/compare_paper.py`
+põe as duas curvas lado a lado vs CDI. Bat: `paper_blend_sim_daily.bat`.
+
+Alternativas se quiser o blend **enviando de verdade** também: (a) 2ª conta demo na
+XP + `mt5.login()` por script (comparação limpa, com fills reais); (b) trocar de
+vez o paper-trade para o blend (`paper_blend_daily.bat`) e abrir mão do campeão.
+Por ora fica (sim) — 2–4 semanas de curva comparável custam nada.
+
+## Short — decidido: **fica de fora**
+
+Re-perguntado. Já testado e perdedor em toda configuração: long-short
+cross-sectional na B3 = Sharpe −0,20, drawdown −89% (§9); hedge com WIN piora todo
+config (Sharpe 0,66 → 0,26, §11). O vol-target YZ já desalavanca em stress — é a
+proteção de baixa do projeto. Quem quiser proteção extra: mais caixa (alvo de vol
+menor) ou put de índice (custo recorrente, infra de opção), **não** short
+sistemático. Design permanece **long-only + CDI no caixa**.
+
+## Programa de eleição — decidido: **não implementar overlay sistemático**
+
+Re-perguntado. `scripts/election_test.py`: o haircut de calendário pré-comprometido
+não move nada (Sharpe/CDI 0,49 → 0,48, mesmo drawdown) e custou 2,3 pp no rali de
+2018. `trader/risk/election.py::haircut_series` existe para quem quiser ligar na
+mão por tranquilidade, mas **não está plugado no executor** e não é recomendado. Um
+palpite direcional na eleição, se houver, é um balde tático pequeno e **manual**,
+separado do sistema — não uma regra do programa.
 
 ## Fios em aberto
 
-- **WIN / WDO**: testado (proxies ^BVSP / USDBRL=X) — **não ajuda** (§11).
 - **Fatores fundamentalistas** (valor/qualidade): brapi free não tem histórico;
   fazer via dividend yield (Yahoo).
 - **Corrigir o universo de fatores** — 22 tickers faltando no Yahoo (viés de
-  sobrevivência). Tentar outra fonte / outro formato de ticker.
-- **Overlay de evento (eleição out/2026)** — reduzir exposição na janela; não é
-  backtestável (N pequeno). Ver discussão à parte.
-- **Paper-trade do blend** — hoje o paper roda só o campeão. Adicionar a sleeve de
-  fatores exige um executor cross-sectional ao vivo.
+  sobrevivência). Tentar outra fonte / outro formato de ticker (B3 COTAHIST).
 - **IR e viés de sobrevivência**: ajustar os números para depois de imposto e para
   o universo real antes de qualquer capital de verdade.
