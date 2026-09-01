@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "trader"
+version = "0.1.0"
+description = "Trading automatizado PETR4 — MT5 + Python, regras primeiro"
+requires-python = ">=3.10"
+dependencies = [
+    "pandas>=2.0",
+    "numpy>=1.24",
+    "pyarrow>=14",
+    "pyyaml>=6",
+    "yfinance>=0.2.40",
+]
+
+[project.optional-dependencies]
+mt5 = ["MetaTrader5>=5.0.45"]
+ml = ["lightgbm>=4.5", "scikit-learn>=1.4"]
+dev = ["pytest>=8", "matplotlib>=3.7"]
+
+[tool.setuptools.packages.find]
+include = ["trader*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

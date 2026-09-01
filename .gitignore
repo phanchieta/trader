@@ -1,0 +1,19 @@
+# segredos
+.env
+
+# dados coletados / baixados — não versionar
+data/
+*.parquet
+
+# python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+
+# editores
+.vscode/
+.idea/
+*.egg-info/
