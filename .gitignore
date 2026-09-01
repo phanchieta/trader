@@ -1,8 +1,8 @@
 # segredos
 .env
 
-# dados coletados / baixados — não versionar
-data/
+# dados coletados / baixados — não versionar (só a pasta data/ da raiz)
+/data/
 *.parquet
 
 # python
