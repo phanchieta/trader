@@ -81,3 +81,8 @@ risk_overlay:
   max_leverage: 1.0         # nunca alavanca; só corta exposição
   trailing_stop_pct: 0.10   # recuo do pico que protege o lucro (só arma no azul)
                             # varredura 8–20% todas batem "sem stop"; 10% = meio robusto
+
+blend:
+  champion_weight: 0.5      # fração do capital na sleeve campeão; o resto vai para fatores
+  factor_quintile: 0.20     # top 20% do score de fatores (quintil)
+  # sleeve de fatores rebalanceia por trimestre-calendário; vol-target diário

@@ -33,8 +33,13 @@ Pré-imposto. Rodando no paper-trade da conta demo.
 **Campeão** — `stress_champion` (robustez) · `champion_vs_cdi` (alpha sobre o CDI
 por nível de risco) · `optimize_champion` (otimização do sizing)
 
-**Ao vivo** — `check_corretora` · `demo_round_trip` · `paper_trade` (dry-run;
-`--send` envia) · `paper_report` (tracking error vs backtest) · `collect_intraday`
+**Ao vivo** — `check_corretora` · `demo_round_trip` · `paper_trade` (campeão;
+dry-run, `--send` envia) · `paper_blend` (blend campeão+fatores; estado próprio
+em `data/blend_state.json`) · `paper_report` · `collect_intraday`
+
+O `paper_blend` lê os parquets do universo de fatores — mantenha
+`pull_factor_universe.py` + `pull_futures_proxy.py` rodando (cron diário). Sleeve
+campeão diária; sleeve de fatores rebalanceia por trimestre-calendário.
 
 ```bash
 pytest        # 128 testes

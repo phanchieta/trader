@@ -20,6 +20,7 @@ class SymbolState:
 class PortfolioState:
     symbols: dict = field(default_factory=dict)
     updated: str = ""
+    factor: dict = field(default_factory=dict)   # {"quintile": [...], "last_rebalance": "iso"}
 
     def get(self, sym: str) -> SymbolState:
         return self.symbols.setdefault(sym, SymbolState())
@@ -30,7 +31,7 @@ def load(path) -> PortfolioState:
     if not p.exists():
         return PortfolioState()
     raw = json.loads(p.read_text(encoding="utf-8"))
-    st = PortfolioState(updated=raw.get("updated", ""))
+    st = PortfolioState(updated=raw.get("updated", ""), factor=raw.get("factor", {}))
     for sym, d in raw.get("symbols", {}).items():
         st.symbols[sym] = SymbolState(**d)
     return st
@@ -39,7 +40,7 @@ def load(path) -> PortfolioState:
 def save(state: PortfolioState, path) -> None:
     p = Path(path)
     p.parent.mkdir(parents=True, exist_ok=True)
-    payload = {"updated": state.updated,
+    payload = {"updated": state.updated, "factor": state.factor,
                "symbols": {s: asdict(v) for s, v in state.symbols.items()}}
     p.write_text(json.dumps(payload, indent=2), encoding="utf-8")
 

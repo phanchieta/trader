@@ -303,6 +303,19 @@ CDI de forma real** (+4,5 a +7,2% pós-IR), e depois de descontar o viés de
 sobrevivência (~1–3 pp) ainda sobra **~CDI + 3–5% a.a. pós tudo**, com drawdown
 −9 a −15%. Sharpe sobre o CDI ~0,7 (pré-IR) é o teto do projeto.
 
+## Executor do blend ao vivo
+
+`trader/live/blend_planner.py` (`plan_blend`) + `scripts/paper_blend.py` +
+`paper_blend_daily.bat`. Combina as duas sleeves num mapa único de peso por ação:
+- campeão: SuperTrend nas 5 ações, re-avaliado diariamente, vol-target YZ da cesta.
+- fatores: top quintil do score combinado, SELEÇÃO por trimestre-calendário
+  (congelada no `blend_state.json` entre rebalances), vol-target YZ do Ibov diário.
+Estado/diário separados do `paper_trade.py` (`blend_state.json` / `blend_journal.csv`).
+Dry-run offline (equity R$1M): 21 posições (3 campeão + 20 fatores, 3 sobrepostas),
+~59% investido. Lê os parquets do universo — precisa de `pull_factor_universe.py`
+rodando diariamente. **Pendente: rodar o dry-run com o MT5 aberto e trocar a
+tarefa agendada de `paper_trade_daily.bat` para `paper_blend_daily.bat`.**
+
 ## Fios em aberto
 
 - **WIN / WDO**: testado (proxies ^BVSP / USDBRL=X) — **não ajuda** (§11).
