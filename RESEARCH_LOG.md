@@ -222,6 +222,50 @@ janela da vol, alavancagem, peso por ação.
   3–4%, maxDD −4–5%, melhor Sharpe/CDI; 0,25 = CDI + ~6%, maxDD −10%; 0,35 = CDI +
   8%, maxDD −15%.
 
+### 16. "Nunca realizar perda" — averaging down / grid (`research_grid_averaging.py`)
+
+A estratégia manual do usuário: compra quando a ação está mais barata que o comum
+dos últimos dias; se cai mais, vai comprando e baixando o preço médio (até
+`max_adds`); vende **tudo** num repique acima do preço médio (`take_profit_pct`);
+**nunca vende no vermelho**; se o caixa acaba, segura; caixa parado rende CDI.
+`trader/backtest/grid_averaging.py`, caixa compartilhado entre as 5 da cesta.
+
+OOS 2015–2026, cesta de 5, R$1M, CDI no caixa:
+
+| config | CAGR | alpha vs CDI | Sharpe/CDI | maxDD |
+|---|---|---|---|---|
+| buy & hold da cesta | 17,9% | +8,2% | 0,41 | −48% |
+| grid z1 drop5 tp3 f10 | 13,9% | +4,2% | 0,30 | −38% |
+| grid z2 drop10 tp5 f8 | 15,1% | +5,3% | 0,47 | −25% |
+| grid z1 drop5 tp3 **+ stop 25%** | 10,3% | +0,5% | 0,11 | −33% |
+
+**O que a regra esconde** (variante base, 215 trades fechados):
+- **acerto de 98% dos trades fechados** — é o "nunca realizei perda", confirmado.
+  Mas é artefato contábil: você só fecha quem voltou pro verde.
+- **maior espera até um lucro: 1 946 pregões (~7,7 anos)**. Posição no vermelho por
+  1 933 pregões seguidos. Pior momento de uma posição: **−51% "embaixo d'água"**.
+- **pico de caixa investido: 99%** — no pior momento, zero pólvora seca pra outra
+  coisa (o custo que o usuário já reconhecia: "empata o caixa").
+- caixa investido médio 42% → metade do capital parado no CDI é o que puxa o CAGR
+  **abaixo do buy & hold da mesma cesta**.
+
+**Stress — PETR4 sozinha no crash 2010–2017 (−85%):** CAGR 4,9% vs CDI 10,6% →
+**alpha −5,7%**, Sharpe/CDI −0,44, posição −84% embaixo d'água, 1 lote preso no fim
+com **−R$196 mil de prejuízo não realizado** (−19,6% do capital) que nunca virou
+"perda" no extrato mas é perda de verdade.
+
+**Veredito:** funciona num sentido estreito — cesta diversificada de sobreviventes,
+década majoritariamente de alta → bate o CDI (+4–5% a.a.) com 98% de acerto. Mas
+(1) **perde pro buy & hold da mesma cesta** (metade do caixa fica parado); (2) o
+risco é **tempo e concentração** — anos embaixo d'água, caixa 100% preso na pior
+hora; (3) **um único nome que não se recupera** (PETR4 2014–16, ou qualquer
+delisting) crava um rombo permanente e destrói o histórico — e o backtest ainda
+**superestima** porque o Yahoo só tem sobreviventes (viés de sobrevivência, §14c).
+O stop de 25% **piorou** na cesta de blue chips (corta recuperações), que é
+justamente por que a versão manual "deu certo": survivorship + regime bom. Fica
+como estudo — não entra no programa. `entry_z 2 / drop 10 / tp 5` é a menos pior
+(Sharpe/CDI 0,47, maxDD −25%) se algum dia virar um sleeve pequeno e capado.
+
 ---
 
 ## CAMPEÃO

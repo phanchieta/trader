@@ -28,7 +28,9 @@ Pré-imposto. Rodando no paper-trade da conta demo.
 `research_cross_sectional` (momentum cross-sectional — falhou) · `research_futures`
 (WIN/WDO — não ajudou) · `factor_model` (fatores B3 no universo grande) ·
 `ml_baseline` / `ml_experiment` (LightGBM — AUC 0,54, não bate a regra) ·
-`compare_horizons` `deep_dive` `validate` `validate_intraday`
+`research_grid_averaging` (averaging down "nunca realiza perda" — bate o CDI mas
+perde pro buy&hold e tem cauda feia) · `compare_horizons` `deep_dive` `validate`
+`validate_intraday`
 
 **Campeão** — `stress_champion` (robustez) · `champion_vs_cdi` (alpha sobre o CDI
 por nível de risco) · `optimize_champion` (otimização do sizing)
@@ -51,8 +53,10 @@ pytest        # 128 testes
 
 **Não ajudaram:** reversão à média (B3 segue, não reverte), ensembles (sinais trend
 correlacionados), filtros de força de tendência (ER gate, ADX), momentum cross-sectional
-(−71% de drawdown). O paper-trade ainda roda o SMA+trailing; migrar para o campeão exige
-plugar o overlay no `live/planner.py`.
+(−71% de drawdown), averaging down "nunca realiza perda" (98% de acerto mas perde pro
+buy&hold e um nome que não recupera crava rombo permanente — §16 do RESEARCH_LOG).
+O paper-trade ainda roda o SMA+trailing; migrar para o campeão exige plugar o overlay
+no `live/planner.py`.
 
 Yahoo intraday é raso (1m ~7d, 5m/15m/30m ~60d, 1h ~730d). Para 1m com profundidade,
 `scripts/collect_intraday.py` (MT5) acumula ao vivo durante o pregão.
