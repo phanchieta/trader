@@ -42,15 +42,20 @@ blend_p = DATA / "blend_sim_equity.csv"
 if blend_p.exists():
     rows.append(("blend (sim)", _curve(blend_p)))
 
-print(f"{'':16} {'dias':>5} {'ret.acum':>10} {'CAGR':>9} {'maxDD':>8} {'alpha/CDI':>10}")
+MIN_DIAS_CAGR = 60      # anualizar com menos que isso é ruído, não sinal
+
+print(f"{'':16} {'dias':>5} {'ret.acum':>10} {'maxDD':>8} {'CAGR/alpha':>16}")
 for name, eq in rows:
     if len(eq) < 2:
         print(f"{name:16} {len(eq):>5}  (poucos pontos — volte em ~2 semanas)")
         continue
     s = _stats(eq, cdi)
-    print(f"{name:16} {s['n']:>5} {s['ret']:>+9.2%} {s['cagr']:>+8.2%} "
-          f"{s['dd']:>+7.2%} {s['alpha']:>+9.2%}")
+    days = (eq.index[-1] - eq.index[0]).days
+    ann = f"{s['cagr']:+.1%} / {s['alpha']:+.1%}" if days >= MIN_DIAS_CAGR else "(cedo p/ anualizar)"
+    print(f"{name:16} {s['n']:>5} {s['ret']:>+9.2%} {s['dd']:>+7.2%} {ann:>16}")
 
 start = min(eq.index[0] for _, eq in rows)
 print(f"\ninício comum: {start.date()} | hoje: {pd.Timestamp.today().date()}")
+print(f"CAGR/alpha só aparece com >= {MIN_DIAS_CAGR} dias corridos — antes disso, "
+      "anualizar 2 semanas é ruído.")
 print("campeão = equity da conta demo (paper_trade.py) · blend = paper_blend_sim.py")

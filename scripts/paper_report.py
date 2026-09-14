@@ -44,17 +44,24 @@ print(f"  retorno {live_ret:+.3%} | drawdown {live_dd:.3%} | "
       f"equity {live.iloc[0]:,.0f} -> {live.iloc[-1]:,.0f}")
 
 start = live.index[0].tz_localize(None) if live.index[0].tzinfo else live.index[0]
-frames = {}
+# aquecimento: SuperTrend + vol-target YZ precisam de histórico ANTES de `start`
+# pra não começarem zerados; corta o resultado pra janela do paper só depois.
+WARMUP = 250
+frames_full = {}
 for s in SYMS:
     p = DATA / f"{s.lower()}_d1.parquet"
     if not p.exists():
         sys.exit(f"falta {p} — rode scripts/pull_basket.py")
-    frames[s] = load(p).loc[str(start.date()):]
+    full = load(p)
+    pos = full.index.searchsorted(pd.Timestamp(start, tz=full.index.tz))
+    frames_full[s] = full.iloc[max(0, pos - WARMUP):]
 
-yz = vol_target_multiplier(frames, **YZ)
-res = run_portfolio(frames, SuperTrend(10, 3.0), B3Costs.from_config(cfg),
+yz = vol_target_multiplier(frames_full, **YZ)
+res = run_portfolio(frames_full, SuperTrend(10, 3.0), B3Costs.from_config(cfg),
                     initial_equity=float(live.iloc[0]), lot_size=LOT, overlay_mult=yz)
-bt = res.equity
+bt_full = res.equity
+bt = bt_full.loc[str(start.date()):]
+bt = bt * (float(live.iloc[0]) / float(bt.iloc[0]))     # rebase no mesmo capital
 bt_ret = bt.iloc[-1] / bt.iloc[0] - 1.0
 bt_dd = (bt / bt.cummax() - 1.0).min()
 print(f"\nBACKTEST (mesma config, mesma janela)")
@@ -62,11 +69,15 @@ print(f"  retorno {bt_ret:+.3%} | drawdown {bt_dd:.3%} | "
       f"equity {bt.iloc[0]:,.0f} -> {bt.iloc[-1]:,.0f}")
 
 # tracking error: desvio-padrão da diferença de retornos diários alinhados por data
+# (o diário do paper grava HORA da execução; normaliza pra DIA pra casar com o
+# backtest, que é diário)
 a = live.copy()
 a.index = a.index.tz_localize(None) if a.index.tzinfo else a.index
+a.index = a.index.normalize()
 b = bt.copy()
 b.index = b.index.tz_localize(None) if b.index.tz is not None else b.index
-j = pd.concat([a.rename("live"), b.rename("bt")], axis=1).dropna()
+b.index = b.index.normalize()
+j = pd.concat([a.rename("live"), b.rename("bt")], axis=1, sort=True).dropna()
 if len(j) >= 3:
     d = j["live"].pct_change() - j["bt"].pct_change()
     te = d.std() * np.sqrt(252)

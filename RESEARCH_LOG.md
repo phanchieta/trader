@@ -310,6 +310,24 @@ real cai para ~+2,5–3,5% a.a. Custo de fundo/Tesouro para guardar o caixa: −
   multiplicador de exposição 0,56; ~33% investido. Rodou limpo.
 - Plano: acumular ~4 semanas → `scripts/paper_report.py` (tracking error vs
   backtest) → decidir capital real mínimo.
+- **Checagem em 2026-09-14 (11 pregões de paper real):** equity R$999.998 →
+  R$1.022.608 (+2,26%), maxDD −0,45%, 5 posições (~54% investido). `paper_report.py`
+  tinha um bug — cortava o histórico exatamente no início da janela, sem
+  aquecimento pro SuperTrend/vol-target, e dava backtest 0% flat; corrigido (agora
+  aquece 250 pregões antes e reindexa por dia, não por timestamp de execução).
+  Depois do fix: backtest da mesma config na mesma janela = **+1,51%**, tracking
+  error anualizado **2,2%** — a execução real bate o script quase igual ao
+  esperado, levemente à frente. `vs_benchmark` também tinha o mesmo problema de
+  timestamp vs CDI diário (`compare_paper.py` já normalizava certo). **Cedo demais
+  pra anualizar** (CAGR/alpha só faz sentido com ≥60 dias corridos — `compare_paper.py`
+  esconde a anualização até lá).
+- **`trader-blend-sim` nunca tinha sido agendado de verdade** (só rodei uma vez na
+  hora de construir) — parquets do universo e CDI ficaram parados em 2026-09-01.
+  Agora: dados atualizados, sim catch-up rodado (+1,97% até 2026-09-14, não é uma
+  simulação dia-a-dia fiel desse intervalo — só o snapshot de chegada), e a tarefa
+  `trader-blend-sim` agendada (dias úteis 18h30) pra rodar de verdade daqui pra
+  frente. Comparação de fato só fica útil com as duas rodando diariamente por
+  algumas semanas.
 
 ## Lições transferíveis
 
