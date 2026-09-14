@@ -266,6 +266,77 @@ justamente por que a versão manual "deu certo": survivorship + regime bom. Fica
 como estudo — não entra no programa. `entry_z 2 / drop 10 / tp 5` é a menos pior
 (Sharpe/CDI 0,47, maxDD −25%) se algum dia virar um sleeve pequeno e capado.
 
+### 17. Regimes de Markov — o "hedge fund method" do vídeo (`research_markov_regime.py`)
+
+Fonte: framework de Roan/@RohOnChain, repositório
+`github.com/jackson-video-resources/markov-hedge-fund-method` (spec + Pine Script +
+backtest do autor). Estado pelo retorno composto de 20 pregões: bull > +5%, bear
+< −5%, lateral no meio (limites exclusivos). Matriz 3×3 por contagem, sem
+suavização, **re-estimada todo dia** com janela expansível (mín. 252 transições).
+Sinal = P(bull amanhã) − P(bear amanhã). O código do autor opera `sign(sinal)`
+long/short; o vídeo usa a magnitude como tamanho. `trader/regime/markov.py`.
+
+**Diagnóstico (a parte que importa):**
+- **A "persistência" é artefato da janela sobreposta.** Hoje e amanhã dividem 19 de
+  20 retornos. Diagonal real da PETR4 0,84/0,78/0,88 (bear/lateral/bull) vs
+  **retornos embaralhados — zero regime — 0,86/0,76/0,88**. Igual nas 5 ações. Com
+  janelas disjuntas (estado a cada 20 pregões) a diagonal cai para 0,12–0,27 /
+  0,39–0,56 / 0,28–0,35 ≈ frequência incondicional: **não há persistência real**.
+- **A matriz prevê o estado de amanhã exatamente tão bem quanto "amanhã = hoje"**:
+  83,8% vs 83,8% (OOS, 5 ações). Não acrescenta nada.
+- **O sinal é função de 3 valores do retorno de 20 dias**: bear ≈ −0,83, lateral ≈
+  0,00–0,03, bull ≈ +0,86, em todas as ações. "prob > 0,5" = "r20 > +5%" em
+  **100%** dos dias; "sinal long" = "r20 ≥ −5%" em 92,6%. É momentum de 20 dias com
+  banda — que já estava testado.
+- **O estado bear NÃO prevê queda.** Retorno médio do dia seguinte (OOS, 5 ações
+  juntas): bear **+7,0 bps** (t 1,4), lateral +4,6 (t 1,9), bull +12,5 (t 3,8),
+  incondicional +7,8. Próximos 20 dias (sem sobreposição): bear +1,1%, lateral
+  +1,6%, bull +2,0%. Bull − bear ≈ 5,5 bps/dia, t ≈ 0,9 — não significativo. Leve
+  momentum no bull; **vender no bear é vender um ativo com retorno esperado
+  positivo** (e pagar aluguel).
+
+**Backtest na cesta**, R$1M, CDI no caixa, custos B3, aluguel 2% a.a. no short.
+Escolha de variante em 2010–2015 (bear market BR — tudo negativo, inclusive o
+campeão, −0,40), OOS 2015-07..2026-09:
+
+| config | Sh/CDI 10–15 | CAGR | alpha | pós-IR | Sh/CDI | maxDD | expo |
+|---|---|---|---|---|---|---|---|
+| buy & hold cesta | −0,02 | 18,8% | +9,0% | — | 0,43 | −48% | 1,00 |
+| **campeão (vol 0,15)** | −0,40 | 14,1% | +4,3% | +3,0% | **0,59** | −6% | 0,28 |
+| campeão vol 0,25 | −0,37 | 16,1% | +6,4% | +5,0% | 0,57 | −10% | 0,44 |
+| **campeão vol 0,35** | −0,32 | 16,9% | +7,1% | **+5,7%** | 0,54 | **−15%** | 0,51 |
+| markov L/S sinal (autor) | −0,79 | 11,0% | +1,2% | +0,3% | 0,16 | −28% | 0,99 |
+| markov L/S prob (vídeo) | −0,83 | 11,0% | +1,3% | +0,2% | 0,15 | −24% | 0,48 |
+| markov L/S sinal +YZ | −0,88 | 11,0% | +1,2% | +0,2% | 0,18 | −8% | 0,50 |
+| **markov long sinal** (escolhida) | −0,56 | 16,5% | +6,7% | **+5,5%** | 0,43 | **−22%** | 0,69 |
+| markov long prob | −0,60 | 13,6% | +3,8% | +2,5% | 0,37 | −11% | 0,29 |
+| markov long sinal +YZ | −0,69 | 13,5% | +3,7% | +2,5% | 0,46 | −10% | 0,36 |
+| markov long prob +YZ | −0,72 | 11,9% | +2,1% | +0,9% | 0,42 | −5% | 0,15 |
+| markov ±2% long sinal +YZ | −0,63 | 13,4% | +3,6% | +2,4% | 0,47 | −10% | 0,32 |
+| momentum 20d banda 5% +YZ | −0,70 | 12,2% | +2,4% | +1,2% | 0,41 | −6% | 0,17 |
+| HMM P(calmo) | −0,40 | 13,4% | +3,6% | +2,4% | 0,27 | −24% | 0,83 |
+| HMM P(calmo) +YZ | −0,55 | 13,0% | +3,2% | +2,0% | 0,37 | −11% | 0,44 |
+
+- **Long/short como no vídeo: praticamente CDI com drawdown de −24 a −28%.** O lado
+  vendido é o que mata (coerente com §9 e com o bear que não prevê queda).
+- **Long-only funciona como filtro "sai depois de um mês de −5%"**: a variante
+  escolhida na janela de escolha dá o mesmo Sharpe do buy & hold (0,43) com metade
+  do drawdown. Alpha pós-IR +5,5% parece bom, mas **no mesmo risco o campeão
+  domina**: vol-alvo 0,35 = +5,7% pós-IR com −15% (vs −22%) e menos exposição; no
+  mesmo drawdown de −10%, campeão +5,0% vs markov +2,5%.
+- **HMM gaussiano de 2 estados** (a versão da literatura — Hamilton 1989;
+  Kritzman-Page-Turkington 2012; jump models em Shu-Yu-Mulvey 2024) — estado
+  latente, walk-forward anual, janela de 10 anos, `trader/regime/hmm.py`. Na PETR4
+  acha calmo (+0,21%/dia, vol 1,9%) e turbulento (−0,85%/dia, vol 6,4%): é um
+  **regime de volatilidade** — o que o vol-target Yang-Zhang já faz de forma mais
+  direta. Sh/CDI 0,27–0,37 e ~12 mil trades (probabilidade contínua gira muito).
+
+**Veredito:** não entra. O "método de hedge fund" é momentum de 20 dias com
+banda, apresentado como matriz; a pegajosidade é matemática da janela, não do
+mercado; o short perde; o long-only é dominado pelo campeão em qualquer nível de
+risco. Lição reaproveitável: **teste nulo com retornos embaralhados** antes de
+acreditar em qualquer "persistência" medida com janela móvel.
+
 ---
 
 ## CAMPEÃO

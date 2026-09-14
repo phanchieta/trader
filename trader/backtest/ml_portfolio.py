@@ -4,6 +4,7 @@ qualquer coisa que produza um alvo por ação/dia.
 
 Mesma mecânica do backtest.portfolio: alvo de t executa na abertura de t+1;
 capital dividido igualmente; overlay de exposição e trailing-stop opcionais.
+`borrow_rate_aa` cobra aluguel (BTC) sobre o valor vendido a descoberto.
 """
 from __future__ import annotations
 
@@ -20,7 +21,8 @@ def run_target_portfolio(frames: dict, target: pd.DataFrame, costs: B3Costs, *,
                          overlay_mult: pd.Series | None = None,
                          trailing_stop: float | None = None,
                          cash_rate: pd.Series | None = None,
-                         target_is_weight: bool = False) -> PortfolioResult:
+                         target_is_weight: bool = False,
+                         borrow_rate_aa: float = 0.0) -> PortfolioResult:
     syms = list(frames)
     idx = target.index
     n = len(syms)
@@ -44,11 +46,18 @@ def run_target_portfolio(frames: dict, target: pd.DataFrame, costs: B3Costs, *,
     peak = {s: 0.0 for s in syms}
     blocked = {s: False for s in syms}
     equity = np.empty(len(idx))
+    gross = np.empty(len(idx))
     trades = {s: 0 for s in syms}
     fees_total = 0.0
+    borrow_d = (1.0 + borrow_rate_aa) ** (1.0 / 252.0) - 1.0
+    borrow_total = 0.0
 
     for i in range(len(idx)):
         cash *= 1.0 + rate[i]
+        if borrow_d:
+            short_val = sum(-shares[s] * open_[s][i] for s in syms if shares[s] < 0.0)
+            cash -= short_val * borrow_d
+            borrow_total += short_val * borrow_d
         mtm = cash + sum(shares[s] * open_[s][i] for s in syms)
         budget = mtm if target_is_weight else mtm / n
         for s in syms:
@@ -80,6 +89,8 @@ def run_target_portfolio(frames: dict, target: pd.DataFrame, costs: B3Costs, *,
                     blocked[s] = True
 
         equity[i] = cash + sum(shares[s] * close[s][i] for s in syms)
+        gross[i] = (sum(abs(shares[s]) * close[s][i] for s in syms) / equity[i]
+                    if equity[i] > 0 else 0.0)
 
     eq = pd.Series(equity, index=idx, name="equity")
     fee_frame = (pd.DataFrame({"fee": [fees_total]}) if fees_total
@@ -87,4 +98,6 @@ def run_target_portfolio(frames: dict, target: pd.DataFrame, costs: B3Costs, *,
     stats = summarize(eq, fee_frame, initial_equity)
     stats["n_trades"] = int(sum(trades.values()))
     stats["trades_por_ativo"] = dict(trades)
+    stats["exposure_media"] = round(float(np.mean(gross)), 3) if len(gross) else 0.0
+    stats["aluguel_R$"] = round(borrow_total, 2)
     return PortfolioResult(eq, dict(trades), stats)

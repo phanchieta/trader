@@ -29,8 +29,9 @@ Pré-imposto. Rodando no paper-trade da conta demo.
 (WIN/WDO — não ajudou) · `factor_model` (fatores B3 no universo grande) ·
 `ml_baseline` / `ml_experiment` (LightGBM — AUC 0,54, não bate a regra) ·
 `research_grid_averaging` (averaging down "nunca realiza perda" — bate o CDI mas
-perde pro buy&hold e tem cauda feia) · `compare_horizons` `deep_dive` `validate`
-`validate_intraday`
+perde pro buy&hold e tem cauda feia) · `research_markov_regime` (regime de Markov
+do vídeo + HMM — persistência é artefato da janela; dominado pelo campeão) ·
+`compare_horizons` `deep_dive` `validate` `validate_intraday`
 
 **Campeão** — `stress_champion` (robustez) · `champion_vs_cdi` (alpha sobre o CDI
 por nível de risco) · `optimize_champion` (otimização do sizing)
@@ -54,7 +55,9 @@ pytest        # 128 testes
 **Não ajudaram:** reversão à média (B3 segue, não reverte), ensembles (sinais trend
 correlacionados), filtros de força de tendência (ER gate, ADX), momentum cross-sectional
 (−71% de drawdown), averaging down "nunca realiza perda" (98% de acerto mas perde pro
-buy&hold e um nome que não recupera crava rombo permanente — §16 do RESEARCH_LOG).
+buy&hold e um nome que não recupera crava rombo permanente — §16 do RESEARCH_LOG),
+regime de Markov "hedge fund method" (a persistência da matriz aparece igual com
+retornos embaralhados; é momentum de 20d com banda — §17).
 O paper-trade ainda roda o SMA+trailing; migrar para o campeão exige plugar o overlay
 no `live/planner.py`.
 
@@ -91,6 +94,7 @@ arquivo `.env` (na raiz, fora do git) e teste com `python scripts/test_telegram.
 | `trader/costs/` | `b3` — emolumentos, corretagem, ISS, slippage |
 | `trader/strategy/` | `base` (interface) + `sma_crossover` (baseline), `mean_reversion`, `momentum`, `opening_range` (intraday); a mesma função roda em backtest e live |
 | `trader/backtest/` | `engine` (sem look-ahead, executa no open seguinte), `metrics`, `split` (treino/teste, walk-forward), `validation` (grid-search no treino, medição OOS) |
+| `trader/regime/` | `markov` (cadeia visível do vídeo: rótulo 20d, matriz expansível, sinal), `hmm` (HMM gaussiano / filtro de Hamilton, só numpy) |
 | `scripts/` | pontos de entrada |
 | `tests/` | custos + causalidade do sinal |
 
