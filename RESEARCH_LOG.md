@@ -337,6 +337,81 @@ mercado; o short perde; o long-only é dominado pelo campeão em qualquer nível
 risco. Lição reaproveitável: **teste nulo com retornos embaralhados** antes de
 acreditar em qualquer "persistência" medida com janela móvel.
 
+### 18. Scalping / day trade na XP — custos reais e 3 estratégias intraday (`research_intraday.py`)
+
+**Dados:** o MT5 da XP tem séries contínuas de mini-índice e mini-dólar com **5 anos
+de M1** (desde 2021-09, ~690 mil barras cada) — `scripts/pull_mt5_intraday.py`.
+`WIN$N`/`WDO$N` = sem ajuste (salta na rolagem); `WIN$D`/`WDO$D` = ajustada por
+diferença (movimento em pontos idêntico, sem salto) — resultado sai da `$D`,
+notional da `$N`. `WIN$` = ajuste proporcional. Pregão: WIN/WDO 9:00–18:25; à vista
+10:00–16:55 com horário de verão americano, 10:00–17:55 sem.
+
+**Custos levantados (2026-09 — conferir na tabela vigente):**
+- B3 day trade: WIN ~R$0,25 e WDO ~R$1,20 por contrato por ponta; ação 0,023% por
+  ponta (até R$1 mi/dia; swing 0,030%).
+- XP: corretagem **zero** em minicontratos e day trade de ação **só com RLP ativado**
+  e ordem do próprio cliente em plataforma eletrônica; sem RLP R$1,00 por
+  minicontrato. Ação swing no home broker: fontes indicam **R$4,90 por ordem**.
+- MetaTrader 5 na XP: **R$299,90/mês** na tabela comparativa de plataformas (há
+  menção a isenção por volume de minicontratos — não confirmado).
+- IR day trade 20% do lucro líquido mensal (o 1% retido é antecipação).
+
+Por operação completa com 1 tick de slippage por ponta: **WIN R$2,50/contrato =
+2,5 ticks = 0,7 bp**; **WDO R$12,40 = 2,5 ticks = 2,4 bps**; **PETR4 R$4,25 por 100
+ações = 4,2 ticks = 8,7 bps** (sem RLP: R$14,05 no lote de 100 — a corretagem por
+ordem dilui em lote grande).
+
+**Custo x movimento típico (últimos 12 meses, 10:05–16:50, mediana |movimento|):**
+
+| ativo | custo ida+volta | 1 min | 5 min | 15 min | 60 min | acerto p/ empatar (alvo=stop=mediana 15 min) |
+|---|---|---|---|---|---|---|
+| WIN | 2,5 ticks | 7 | 15 | 26 | 53 | **55%** (custo = 10% do movimento) |
+| WDO | 2,5 ticks | 1 | 3 | 5 | 10 | **75%** (50%) |
+| PETR4 | 4,2 ticks | 1 | 3 | 4 | 9 | **103% — impossível** (106%) |
+
+Scalping de ação é inviável por construção. WIN é o único onde o custo é pequeno
+perto do movimento — por isso é o ativo preferido dos day traders no Brasil.
+
+**Estratégias (M1, 1× o patrimônio em notional, CDI no caixa, IR 20%):**
+- **Momentum intraday** (Gao, Han, Li & Zhou 2018, JFE): 1ª meia hora (fechamento
+  anterior → 10:30) prevê a última meia hora do à vista.
+- **Rompimento da faixa de abertura (ORB)**: âncora 9:00/10:00, faixa 5/15/30/60
+  min, com/sem stop no lado oposto, saída no fechamento do à vista.
+- **Scalp de 1 minuto**: minuto com |retorno| ≥ k desvios da vol dos 60 min
+  anteriores → segue ou reverte, sai após 5/15/30 min.
+
+Corte único (treino 2021-09..2023-09, teste 2023-09..2026-09) — todas negativas
+depois do IR no teste (WIN momentum −5,0%, ORB WIN −13,0%, scalp WIN −3,8%, WDO −4,5
+a −8,7%, scalp PETR4 −29%). **Walk-forward rolante** (re-escolhe a cada 126 pregões
+com os 252 anteriores), OOS 2022-09..2026-09, alpha sobre o CDI a.a.:
+
+| estratégia | ativo | sem custo | com custo | pós-IR | Sh/CDI | maxDD |
+|---|---|---|---|---|---|---|
+| momentum intraday | WIN | −0,3% | −2,1% | −4,4% | −0,84 | −2% |
+| momentum intraday | WDO | +0,6% | −2,8% | −4,9% | −2,20 | 0% |
+| rompimento abertura | WIN | **+3,3%** | +0,6% | −4,0% | +0,10 | −15% |
+| rompimento abertura | WDO | −0,2% | −6,4% | −9,7% | −0,56 | −11% |
+| scalp 1 min | WIN | +0,3% | −4,3% | −7,0% | −0,78 | −9% |
+| scalp 1 min | WDO | −2,1% | −7,5% | −9,6% | −2,17 | −3% |
+| scalp 1 min | PETR4 | −1,8% | −37,5% | −39,2% | −3,71 | −68% |
+
+- **Momentum intraday de Gao et al. não existe no WIN 2021–2026** (bruto ≈ 0).
+- **Scalp de 1 minuto:** vantagem bruta de zero a levemente positiva; o custo é
+  várias vezes maior.
+- **ORB no WIN é aposta de regime, não estratégia:** perdeu em 14 das 16
+  combinações em 2021–23 e ganhou em 13 das 16 em 2023–26. A escolha no treino pegou
+  uma das 3 perdedoras do teste (−13%); o walk-forward rolante trocou de parâmetro
+  em 6 de 8 janelas e fechou em +0,6% antes do IR com −15% de drawdown.
+- Evidência brasileira: Chague, De-Losso & Giovannetti ("Day Trading for a
+  Living?", dados da CVM, 19.646 day traders de mini-índice 2013–15): **97% dos que
+  persistiram mais de 300 dias perderam dinheiro**; 1,1% ganhou mais que um salário
+  mínimo. Sem evidência de aprendizado.
+- Motivo estrutural: a vantagem em horizonte de segundos/minuto está na
+  microestrutura (fila no livro, latência, co-location) — HFT. Python → MT5 → XP
+  paga o spread e chega atrasado.
+
+**Veredito:** não entra. Nosso horizonte continua sendo swing/posição.
+
 ---
 
 ## CAMPEÃO
@@ -496,3 +571,10 @@ separado do sistema — não uma regra do programa.
   sobrevivência). Tentar outra fonte / outro formato de ticker (B3 COTAHIST).
 - **IR e viés de sobrevivência**: ajustar os números para depois de imposto e para
   o universo real antes de qualquer capital de verdade.
+- **Custo real do campeão na XP** (§18): o modelo assume corretagem zero em ação
+  swing, mas as fontes indicam R$4,90 por ordem no home broker (via MT5: confirmar
+  na nota de corretagem) + MT5 a R$299,90/mês. O backtest do campeão faz ~575
+  ordens/ano (muitos ajustes de 100 ações pelo vol-target) → ~R$2,8 mil/ano em
+  corretagem + ~R$3,6 mil/ano de plataforma ≈ 0,64% a.a. em R$1 mi. Conferir antes
+  de capital real; se confirmado, pôr no `config/settings.yaml` e testar uma banda
+  de rebalanceamento (só ajustar se o desvio do alvo passar de X%).
