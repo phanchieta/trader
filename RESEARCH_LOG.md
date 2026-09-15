@@ -652,11 +652,88 @@ caixa, IR 15%.
 opção na B3 é trocar CDI + pequenos prêmios por risco de cauda. **Subproduto
 valioso:** o COTAHIST tem o histórico de **todas** as ações negociadas, inclusive as
 que saíram da bolsa — dá para reconstruir o universo do modelo de fatores sem viés
-de sobrevivência (§14c), faltando só ajustar desdobramentos e proventos.
+de sobrevivência (§14c), faltando só ajustar desdobramentos e proventos (→ §23).
+
+### 23. Sem viés de sobrevivência nem de escolha: fatores e campeão ≈ CDI (`research_survivorship.py`, `research_champion_bias.py`)
+
+**O achado mais importante da pesquisa até aqui.** Refeitos com o histórico de
+todas as ações da B3, os dois programas "validados" perdem quase todo o alpha.
+
+**Painel sem viés** (`scripts/build_stocks_db.py`, `trader/data/b3_panel.py`): 938
+papéis (ISIN) negociados em lote padrão 2008–2026, só classes de ação (fora BDR/ETF,
+que a B3 classificou como lote padrão em 2020–22); 360 sobreviventes, **578 sumiram**.
+- **Eventos corporativos pelas marcas "ex" do COTAHIST**: EB bonificação (salto
+  mediano −20%), EG grupamento (+900%), C cisão (Itaú→XP, Santander→Getnet, GPA→Éxito),
+  R restituição, D/J dividendo/JCP. Fator redondo mais próximo (tolerância 15%) ou o
+  próprio salto (grupamentos gigantes de ações centavo, cisões); saltos > 45% sem
+  marca só com confirmação da quantidade negociada.
+- **Validação contra o Yahoo** (98 ações, 345 mil dias sem provento): diferença > 5%
+  em 0,16% dos dias — **a maioria erro do Yahoo** (UGPA3 +119% em 2021-06-28, GGBR4
+  +23% em 2009-05-29, dias de out/2008 com retorno zero em pleno crash).
+- **Provento estimado** (B3 marca o dia ex, não o valor): queda da abertura menos o
+  gap noturno do BOVA11. Ruidoso por evento (JCP mensal do Itaú ~0,06% contra ruído
+  de ~1%), mas por ação-ano correlação 0,82 com o Yahoo e yield 3,8% x 4,7% —
+  subestima ~0,9 p.p./ano (≈0,5 p.p. no portfólio).
+- Universo de cada data (só passado): mediana de R$ negociados em 60 pregões ≥ R$5 mi,
+  preço ≥ R$1, 1 ano de histórico, negociou nos últimos 5 pregões; quem para de
+  negociar é vendido pelo último preço. Elegíveis 2010: 82 (só 36 sobreviveram);
+  2026: 138. Rodado com R$1 mi (o §12 usava R$100 mil — lote de 100 distorcia).
+
+**Modelo de fatores** (mesmos 5 fatores, quintil, 63 pregões, vol-target YZ do Ibov),
+2013-01..2026-09:
+
+| versão | CAGR | alpha | pós-IR | Sh/CDI | maxDD |
+|---|---|---|---|---|---|
+| Y — 98 do Yahoo, sem filtro (§12) | 15,6% | +5,8% | +4,6% | 0,47 | −18% |
+| Y+F — 98 do Yahoo + filtro de liquidez | 17,2% | +7,4% | +6,2% | 0,54 | −17% |
+| Y-B3 — mesmas 98 pela B3, provento estimado | 12,1% | +2,3% | +1,3% | 0,22 | −26% |
+| S — todas as sobreviventes (B3) | 11,2% | +1,4% | +0,4% | 0,16 | −29% |
+| **T — todas as ações, sem viés (B3)** | 10,0% | **+0,2%** | **−0,9%** | **0,07** | −14% |
+
+- **Viés de sobrevivência (S − T): +1,2 p.p. de alpha** (+0,1 p.p. só com preço).
+- **Fonte Yahoo x B3 (Y+F − Y-B3): +5,2 p.p.** — ~1,2 p.p. vem de medir o retorno
+  (inclui o provento subestimado e os saltos do Yahoo; UGPA3 sozinha dá +7% de
+  retorno acumulado falso) e **~3,9 p.p. da escolha das ações**. Fator a fator os
+  scores Yahoo e B3 batem (correlação 0,97–0,99, alpha até 0,5 p.p. diferente); a
+  diferença aparece no combinado com ~13 nomes, onde pequenas diferenças trocam as
+  ações da borda do quintil. No universo completo (~23 nomes) o resultado é estável:
+  **20 rodadas com ruído de ±2 p.p. nos percentis dão alpha +0,3% ± 0,4%**.
+- Papéis que depois sumiram ocuparam 31% do quintil em média (pico 72%): renderam
+  +1,4% por trimestre contra +3,1% dos sobreviventes. Passaram pelo quintil: OGX…,
+  CESP6, CPLE6, ELET3/6, BTOW3, CIEL3, BRFS3, EMBR3, CCRO3, ARZZ3…
+- Fator a fator (95 nomes, retorno B3): momentum +3,5 a +3,9%, baixa vol +1,5 a
+  +2,0%, baixo beta ~0, **reversão de 3 anos −3 a −4%, reversão de 1 mês −6,4%** em
+  2013–26. Hipótese para testar à frente, não para escolher com estes dados.
+
+**Campeão com cesta escolhida só com o que se sabia** — as 5 empresas mais negociadas
+no 1º pregão de cada ano (mediana de R$ em 250 pregões, uma classe por empresa). A
+cesta causal teve **OGXP3 de 2011 a 2013**, VVAR3 em 2021, MGLU3 em 2023 — a cesta
+"de hoje" evita todas por construção.
+
+| campeão | janela | alpha | pós-IR | Sh/CDI | maxDD |
+|---|---|---|---|---|---|
+| cesta de hoje, Yahoo | 2014–26 | +3,4% | +2,3% | 0,48 | −6% |
+| cesta de hoje, B3 | 2014–26 | +3,0% | +1,8% | 0,42 | −7% |
+| **cesta causal, B3** | 2014–26 | +1,8% | **+0,6%** | 0,24 | −13% |
+| cesta de hoje, Yahoo | 2010–26 | +1,8% | +0,9% | 0,28 | −6% |
+| **cesta causal, B3** | 2010–26 | −0,4% | **−1,1%** | −0,01 | −13% |
+
+**Veredito:** depois de tirar sobrevivência, escolha da cesta com a lista de hoje e
+os erros de dado do Yahoo, **nenhum dos dois programas bate o CDI com folga depois do
+IR**: o modelo de fatores fica no CDI (−0,9% pós-IR) e o campeão entre CDI +0,6%
+(2014–26) e CDI −1,1% (2010–26). O que parecia CDI + 2 a 7% era, em boa parte, viés.
+O campeão continua fazendo o que faz bem — exposição a ação com drawdown de −13% em
+vez de −40 a −60% —, mas é substituto de renda fixa com volatilidade, não fonte de
+alpha. Lição: **universo sem viés e cesta causal antes de acreditar em qualquer
+backtest**, e desconfiar do Yahoo para ações da B3.
 
 ---
 
 ## CAMPEÃO
+
+> **Atenção (2026-09-15, §23):** os números abaixo usam a cesta escolhida com a lista
+> de hoje e dados do Yahoo. Com cesta causal e dados da B3: alpha +1,8% (pós-IR +0,6%)
+> em 2014–26 e −0,4% (pós-IR −1,1%) em 2010–26.
 
 **Cesta de 5 (PETR4, VALE3, ITUB4, BBDC4, ABEV3) + SuperTrend(period 10,
 multiplier 3) long-only + vol-target Yang-Zhang (alvo 0,15, janela 20,
@@ -732,6 +809,11 @@ real cai para ~+2,5–3,5% a.a. Custo de fundo/Tesouro para guardar o caixa: −
    trend-following puro.
 
 ## Estado da pesquisa (2026-09-01)
+
+> **Superado em 2026-09-15 pelo §23:** sem viés de sobrevivência, sem cesta escolhida
+> com a lista de hoje e com dados da B3, o modelo de fatores fica em CDI −0,9% pós-IR
+> (Sh/CDI 0,07) e o campeão entre CDI +0,6% (2014–26) e CDI −1,1% (2010–26). A tabela
+> abaixo é o registro do que se acreditava em 2026-09-01.
 
 **Dois programas validados:**
 1. **Campeão** — 5 ações + SuperTrend + vol-target YZ. Sharpe/CDI ~0,4–0,6, drawdown
@@ -809,14 +891,16 @@ separado do sistema — não uma regra do programa.
 
 - **Fatores fundamentalistas** (valor/qualidade): brapi free não tem histórico;
   fazer via dividend yield (Yahoo).
-- **Corrigir o universo de fatores** — 22 tickers faltando no Yahoo (viés de
-  sobrevivência). Tentar outra fonte / outro formato de ticker (B3 COTAHIST).
-- **IR e viés de sobrevivência**: ajustar os números para depois de imposto e para
-  o universo real antes de qualquer capital de verdade.
-- **Universo de fatores sem viés de sobrevivência via COTAHIST** (§22): os arquivos
-  anuais da B3 já estão em `data/b3` (2008–2026) com todas as ações, inclusive
-  deslistadas. Falta ajustar desdobramentos/grupamentos (FATCOT, saltos com ISIN
-  igual) e proventos, e refazer o §12 — a principal ressalva do modelo de fatores.
+- **Depois do §23 — o que fazer com os programas ao vivo**: o paper-trade do campeão
+  e o simulador do blend podem seguir como experimento, mas a expectativa realista é
+  ~CDI; não há base para capital real acima do que se colocaria em renda fixa com
+  volatilidade. O blend não é melhor que o campeão.
+- **Refazer as pesquisas antigas no painel da B3**: tudo antes do §23 usou Yahoo e
+  cestas/universos de hoje (§2–§21). As reprovações continuam reprovadas (o viés só
+  infla), mas qualquer candidato novo deve ser testado direto no painel causal.
+- **Hipóteses para testar à frente** (não escolher com os dados de 2013–26): momentum
+  12-1 sozinho e baixa vol no universo causal pareceram melhores que o combinado com
+  as reversões.
 - **Custo real do campeão na XP** (§18): o modelo assume corretagem zero em ação
   swing, mas as fontes indicam R$4,90 por ordem no home broker (via MT5: confirmar
   na nota de corretagem) + MT5 a R$299,90/mês. O backtest do campeão faz ~575

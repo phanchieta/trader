@@ -19,6 +19,11 @@ Walk-forward OOS 2015–2026, CDI creditado no caixa: **CDI + ~4% a.a., max draw
 ~−5%, Sharpe sobre o CDI ~0,6, ~25–33% investido** (resto em caixa rendendo CDI).
 Pré-imposto. Rodando no paper-trade da conta demo.
 
+> **Atenção (§23 do RESEARCH_LOG):** esse número usa a cesta escolhida com a lista de
+> hoje e dados do Yahoo. Com a cesta escolhida só com o que se sabia (5 mais negociadas
+> no início de cada ano) e dados da B3: **CDI +0,6% pós-IR em 2014–26, CDI −1,1% em
+> 2010–26**. O modelo de fatores sem viés de sobrevivência fica no CDI.
+
 ## Scripts (rodar da raiz do repo)
 
 **Dados** — `pull_daily` `pull_basket` `pull_universe` `pull_factor_universe`
@@ -26,7 +31,8 @@ Pré-imposto. Rodando no paper-trade da conta demo.
 (WIN/WDO/PETR4 em M5 e M1, 5 anos, do MT5 da XP) `pull_share_classes` (ON/PN/units)
 `pull_etfs` (BOVA11 — abertura real; a do ^BVSP no Yahoo é falsa) `pull_cotahist` +
 `build_options_db` (séries históricas da B3 2008–2026: todos os negócios, opções com
-bid/ask, inclusive ações deslistadas)
+bid/ask, inclusive ações deslistadas) `build_stocks_db` (todas as ações do lote padrão
+para o painel sem viés)
 
 **Pesquisa** — `research_strategies` (trend family + vol-target) ·
 `research_cross_sectional` (momentum cross-sectional — falhou) · `research_futures`
@@ -42,7 +48,9 @@ overnight x pregão — o retorno de ação na B3 sai quase todo à noite, mas i
 diária não paga o custo) · `research_exec_timing` (campeão executando no leilão de
 fechamento em vez da abertura — +0,1 a +0,2% a.a., ruído) · `research_options`
 (venda coberta e put coberta por caixa em PETR4, VALE3 e BOVA11 com séries reais da B3
-— sem prêmio de volatilidade na média) ·
+— sem prêmio de volatilidade na média) · `research_survivorship` (modelo de fatores
+com todas as ações da B3, inclusive deslistadas — fica no CDI) · `research_champion_bias`
+(campeão com cesta escolhida só com o que se sabia — perde a maior parte do alpha) ·
 `compare_horizons` `deep_dive` `validate` `validate_intraday`
 
 **Campeão** — `stress_champion` (robustez) · `champion_vs_cdi` (alpha sobre o CDI
@@ -118,6 +126,7 @@ arquivo `.env` (na raiz, fora do git) e teste com `python scripts/test_telegram.
 | `trader/pairs/` | `spread` (log spread, z-score, elegibilidade, meia-vida, ADF), `signals` (estado do par), `portfolio` (slots, execução no open seguinte, aluguel) |
 | `trader/seasonal/` | `calendar` (pregão do mês, janela da virada), `timing` (estar ou não posicionado, execução no leilão de fechamento ou na abertura) |
 | `trader/options/` | `bs` (Black-Scholes, vol implícita), `chain` (vencimentos mensais, strike com livro são), `writer` (venda coberta, put coberta por caixa, trava) |
+| `trader/data/b3_panel.py` | painel de todas as ações da B3 pelo COTAHIST: ajuste de desdobramento/grupamento/bonificação/cisão pelas marcas "ex", provento estimado, retorno total |
 | `scripts/` | pontos de entrada |
 | `tests/` | custos + causalidade do sinal |
 

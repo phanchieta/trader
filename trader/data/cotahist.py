@@ -18,22 +18,29 @@ _FIELDS = {"date": (2, 10), "codbdi": (10, 12), "codneg": (12, 24), "tpmerc": (2
            "especi": (39, 49), "open": (56, 69), "high": (69, 82), "low": (82, 95),
            "close": (108, 121), "bid": (121, 134), "ask": (134, 147), "n_trades": (147, 152),
            "qty": (152, 170), "volume": (170, 188), "strike": (188, 201), "expiry": (202, 210),
-           "fatcot": (210, 217)}
+           "fatcot": (210, 217), "codisi": (230, 242)}
 _PRICES = ("open", "high", "low", "close", "bid", "ask")
 
 
-def parse_lines(lines, *, roots: tuple[str, ...], markets: tuple[str, ...] = ("010", "070", "080")) -> pd.DataFrame:
+def parse_lines(lines, *, roots: tuple[str, ...] | None,
+                markets: tuple[str, ...] = ("010", "070", "080"),
+                codbdi: tuple[str, ...] | None = None) -> pd.DataFrame:
+    """`roots=None` = todas as raízes; `codbdi` filtra o código BDI (02 = lote padrão)."""
     rows = {k: [] for k in _FIELDS}
     for raw in lines:
         line = raw.decode("latin-1") if isinstance(raw, bytes) else raw
-        if not line.startswith("01") or line[24:27] not in markets or line[12:16] not in roots:
+        if not line.startswith("01") or line[24:27] not in markets:
+            continue
+        if roots is not None and line[12:16] not in roots:
+            continue
+        if codbdi is not None and line[10:12] not in codbdi:
             continue
         for k, (a, b) in _FIELDS.items():
             rows[k].append(line[a:b])
     df = pd.DataFrame(rows)
     if df.empty:
         return df
-    for k in ("codbdi", "codneg", "tpmerc", "especi"):
+    for k in ("codbdi", "codneg", "tpmerc", "especi", "codisi"):
         df[k] = df[k].str.strip()
     fat = df["fatcot"].astype(np.int64).replace(0, 1)
     for k in _PRICES:
@@ -48,9 +55,10 @@ def parse_lines(lines, *, roots: tuple[str, ...], markets: tuple[str, ...] = ("0
     return df.drop(columns="fatcot")
 
 
-def read_cotahist(path: str | Path, *, roots: tuple[str, ...],
-                  markets: tuple[str, ...] = ("010", "070", "080")) -> pd.DataFrame:
+def read_cotahist(path: str | Path, *, roots: tuple[str, ...] | None,
+                  markets: tuple[str, ...] = ("010", "070", "080"),
+                  codbdi: tuple[str, ...] | None = None) -> pd.DataFrame:
     with zipfile.ZipFile(path) as z:
         name = next(n for n in z.namelist() if n.upper().endswith(".TXT") or "COTAHIST" in n.upper())
         with z.open(name) as fh:
-            return parse_lines(io.BufferedReader(fh), roots=roots, markets=markets)
+            return parse_lines(io.BufferedReader(fh), roots=roots, markets=markets, codbdi=codbdi)

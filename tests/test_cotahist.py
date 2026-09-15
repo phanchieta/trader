@@ -39,3 +39,6 @@ def test_le_acao_e_opcao_e_filtra_raiz_e_mercado():
     call, put = df.iloc[1], df.iloc[2]
     assert call["tpmerc"] == "070" and call["strike"] == 40.0 and call["close"] == 1.55
     assert put["tpmerc"] == "080" and put["ask"] == 0.46 and str(put["expiry"].date()) == "2024-03-15"
+    assert stock["codisi"] == "BRPETRACNPR6"
+    allstocks = parse_lines(lines, roots=None, markets=("010",), codbdi=("02",))
+    assert list(allstocks["codneg"]) == ["PETR4", "VALE3"]
