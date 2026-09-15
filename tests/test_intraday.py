@@ -105,3 +105,6 @@ def test_motor_custos_cdi_e_ir():
     none = run_intraday(trades.iloc[:0], b, WIN, days=days, notional_px=px, cdi=cdi)
     assert np.isclose(none.equity.iloc[-1], 1_000_000 * 1.0004 ** 2)
     assert r.equity_after_tax.iloc[-1] < r.equity.iloc[-1]
+    over = trades.assign(entry_px=[100_000.0], exit_px=[100_050.0])     # preços explícitos
+    r2 = run_intraday(over, b.assign(open=0.0), inst, days=days, notional_px=px, cdi=cdi)
+    assert np.isclose(r2.equity.iloc[0], day1)

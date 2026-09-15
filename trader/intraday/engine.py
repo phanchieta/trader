@@ -39,10 +39,13 @@ def run_intraday(trades: pd.DataFrame, bars: pd.DataFrame, inst: Instrument, *,
                  tax_daytrade: float = 0.20, tax_cdi: float = 0.155) -> IntradayResult:
     """`days`: todos os pregões da janela (dias sem trade rendem só CDI).
     `notional_px`: preço real por dia (fechamento do dia anterior) para dimensionar.
-    `free=True`: sem custo nenhum — mede a vantagem bruta do sinal."""
+    `free=True`: sem custo nenhum — mede a vantagem bruta do sinal.
+    Se `trades` tiver `entry_px`/`exit_px`, usa esses preços em vez das aberturas das
+    barras (ex.: trade overnight que entra no fechamento)."""
     o = bars["open"].to_numpy()
     t = trades[trades["day"].isin(days)]
-    entry, exit_ = o[t["entry_i"].to_numpy()], o[t["exit_i"].to_numpy()]
+    entry = t["entry_px"].to_numpy() if "entry_px" in t else o[t["entry_i"].to_numpy()]
+    exit_ = t["exit_px"].to_numpy() if "exit_px" in t else o[t["exit_i"].to_numpy()]
     dirn = t["direction"].to_numpy()
     pts = dirn * (exit_ - entry)
     slip = 0.0 if free else slippage_ticks

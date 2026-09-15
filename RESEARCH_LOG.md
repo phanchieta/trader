@@ -476,6 +476,81 @@ em que pares funcionavam na B3 (Caldeira & Moura, 2005–2012) — e **sumiu** d
 Liquidez limita o universo a ~6 pares, os líquidos revertem em meses com mudança
 de patamar, e evento societário (controle, conversão) é a cauda que destrói.
 
+### 20. Efeitos de calendário: virada de mês e overnight x pregão (`research_calendar.py`)
+
+`trader/seasonal/` (`month_offsets`, `tom_flag`, `timing_returns` com execução no
+leilão de fechamento ou na abertura seguinte), `scripts/pull_etfs.py` (BOVA11).
+**A abertura do ^BVSP no Yahoo é falsa** (= fechamento anterior em 21–27% dos dias):
+serve para retorno fechamento-a-fechamento, nunca para gap/overnight. BOVA11 e ações
+têm abertura real (PETR4 conferida contra o MT5).
+
+#### 20a. Virada de mês (McConnell & Xu 2008 — efeito em 31 de 35 países)
+
+Ibovespa, retorno médio por pregão (bps/dia):
+
+| pregão | 2000–2012 | t | 2013–2026 | t |
+|---|---|---|---|---|
+| antepenúltimo | +24,0 | 1,7 | +1,0 | 0,1 |
+| último | **+31,1** | 2,6 | −9,4 | −0,9 |
+| 1º do mês | **+65,9** | 4,1 | +14,2 | 1,2 |
+| 2º | +15,3 | 0,9 | +16,2 | 1,4 |
+| 3º | +4,3 | 0,3 | +7,0 | 0,7 |
+| meio do mês | −1,8 | −0,4 | +3,6 | 1,1 |
+
+- Janela [último, +3] = 19% dos pregões: **+13,1% a.a. em 2000–12 contra −3,2% no
+  resto do mês; em 2013–26, +2,9% contra +5,2%.** Muito forte até 2012 e sumiu.
+- Janela escolhida no treino: [último, 1º] (Sh/CDI treino +1,13). Teste no BOVA11
+  2013–26 (4 bps/ponta, CDI no caixa): alpha −2,4%, Sh/CDI −0,28. Janela da
+  literatura [−1,+3]: no leilão de fechamento alpha −0,5% (Sh 0,00); na abertura
+  seguinte +2,2% (Sh +0,24) — frágil: a diferença é trocar a noite do último pregão
+  pela do 4º. Buy & hold BOVA11 no período: alpha −1,5%, maxDD −47%.
+- **Placebo** (os mesmos pregões/mês sorteados, 500 vezes): a virada fica acima de
+  89% dos sorteios — não significativo.
+- Walk-forward anual (janela re-escolhida com todo o Ibovespa anterior): alpha
+  −2,2%, Sh/CDI −0,15. Correlação com o campeão +0,29; 50/50 piora (0,42 → 0,39).
+
+#### 20b. Overnight x pregão (Cliff, Cooper & Gulen 2008; Lou, Polk & Skouras 2019)
+
+- Retorno médio × 252, noite = fechamento → abertura, dia = abertura → fechamento:
+  BOVA11 noite **+18,0%** (t 4,7) / dia −5,6%; PETR4 **+35,3%** (t 6,7) / −11,6%; VALE3
+  +26,7% / −3,1%; ITUB4 +15,5% / +5,2%; BBDC4 +10,2% / +0,7%; ABEV3 +7,6% / +13,5%.
+  PETR4 teve noite positiva em **todos** os anos de 2003 a 2026.
+- Universo B3 desde 2013 (89 ações com abertura confiável): noite positiva em 92–97%
+  das ações, média +22 a +29% a.a.; pregão médio −7 a −12% a.a.
+- Não é artefato de provento: PETR4 2021–26 no MT5 bruto, noite +25,4% a.a. (Yahoo
+  ajustado +24,5%); as 22 datas ex somam −0,3% a.a.
+- **Mini-índice (5 anos de M1): nenhum trecho do dia é significativo** (noite +2
+  pts/dia, t 0,1; 9h–10h −9; pregão +1; pós-fechamento +7). O futuro desconta 1 dia
+  de CDI a cada virada de pregão: noite do WIN + CDI = +11,1% a.a. ≈ noite do BOVA11
+  no mesmo período. **No índice, a "noite positiva" é o CDI embutido**; nas ações
+  individuais sobra mais que isso.
+- Estratégia "compra no leilão de fechamento, vende no de abertura", todo pregão,
+  peso igual, universo pela liquidez conhecida 2 dias antes, IR swing 15%. Duas
+  hipóteses de caixa: **sem CDI** (o dinheiro está na ação à noite — conservador) e
+  **com CDI** (liquidação D+2 compensada, patrimônio segue no CDI — otimista).
+  Alpha sobre o CDI, teste 2013–2026:
+
+| universo | treino Sh/CDI | sem CDI, só taxa (6 bps/dia) | +2 bps slip/ponta | +corretagem R$4,90 | com CDI, só taxa | com CDI +slip |
+|---|---|---|---|---|---|---|
+| BOVA11 | −1,22 | −5,4% | −15,2% | −15,4% | +4,8% | −5,9% |
+| cesta 5 | −0,62 | −2,6% | −12,8% | −13,9% | +7,8% | −3,3% |
+| top 20 | +0,07 | −1,5% | −11,7% | −16,3% | +9,1% | −2,1% |
+| top 50 | +0,22 | −2,2% | −12,4% | −23,5% | +8,2% | −2,9% |
+
+- Por ano (top 50, sem CDI, menos o CDI): segue o mercado — +8 a +22% em 2016–21,
+  −11 a −22% em 2013–15 e 2022–25. Correlação diária com o Ibovespa +0,64; pior
+  noite −14,1% (covid).
+- **Espelho — comprado só durante o pregão: alpha −21,7%, Sh/CDI −1,16.**
+
+**Veredito (as duas):** não entram. A virada de mês existiu até 2012 e sumiu. O
+overnight é o achado mais didático da pesquisa — na B3 o retorno de ficar comprado
+aparece quase todo **fora** do pregão e ficar comprado só durante o pregão é
+péssimo —, mas explorar isso exige ida e volta diária: 252 × qualquer atrito. Só
+fecha positivo com custo exatamente igual à taxa da B3 **e** caixa rendendo CDI;
+2 bps de slippage por ponta já zeram. Derivado útil: testar o campeão entrando no
+**leilão de fechamento** (sinal calculado minutos antes) em vez da abertura
+seguinte — cada entrada ganharia a noite que hoje perde.
+
 ---
 
 ## CAMPEÃO
@@ -635,6 +710,11 @@ separado do sistema — não uma regra do programa.
   sobrevivência). Tentar outra fonte / outro formato de ticker (B3 COTAHIST).
 - **IR e viés de sobrevivência**: ajustar os números para depois de imposto e para
   o universo real antes de qualquer capital de verdade.
+- **Campeão executando no leilão de fechamento** (§20b): hoje o sinal do fechamento
+  executa na abertura seguinte; como a noite rende e o pregão perde na média, entrar
+  no leilão de fechamento (sinal com o preço de ~16h50/17h50) deve ganhar uma noite
+  por entrada. Barato de testar no backtest; exige rodar o executor antes do
+  fechamento, não às 17h35.
 - **Custo real do campeão na XP** (§18): o modelo assume corretagem zero em ação
   swing, mas as fontes indicam R$4,90 por ordem no home broker (via MT5: confirmar
   na nota de corretagem) + MT5 a R$299,90/mês. O backtest do campeão faz ~575
