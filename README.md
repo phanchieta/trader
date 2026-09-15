@@ -24,7 +24,9 @@ Pré-imposto. Rodando no paper-trade da conta demo.
 **Dados** — `pull_daily` `pull_basket` `pull_universe` `pull_factor_universe`
 `pull_futures_proxy` `pull_cdi` `pull_mt5_history` `pull_intraday` `pull_mt5_intraday`
 (WIN/WDO/PETR4 em M5 e M1, 5 anos, do MT5 da XP) `pull_share_classes` (ON/PN/units)
-`pull_etfs` (BOVA11 — abertura real; a do ^BVSP no Yahoo é falsa)
+`pull_etfs` (BOVA11 — abertura real; a do ^BVSP no Yahoo é falsa) `pull_cotahist` +
+`build_options_db` (séries históricas da B3 2008–2026: todos os negócios, opções com
+bid/ask, inclusive ações deslistadas)
 
 **Pesquisa** — `research_strategies` (trend family + vol-target) ·
 `research_cross_sectional` (momentum cross-sectional — falhou) · `research_futures`
@@ -38,7 +40,9 @@ do vídeo + HMM — persistência é artefato da janela; dominado pelo campeão)
 e unit x PN — funcionou até 2014, sumiu depois) · `research_calendar` (virada de mês e
 overnight x pregão — o retorno de ação na B3 sai quase todo à noite, mas ida e volta
 diária não paga o custo) · `research_exec_timing` (campeão executando no leilão de
-fechamento em vez da abertura — +0,1 a +0,2% a.a., ruído) ·
+fechamento em vez da abertura — +0,1 a +0,2% a.a., ruído) · `research_options`
+(venda coberta e put coberta por caixa em PETR4, VALE3 e BOVA11 com séries reais da B3
+— sem prêmio de volatilidade na média) ·
 `compare_horizons` `deep_dive` `validate` `validate_intraday`
 
 **Campeão** — `stress_champion` (robustez) · `champion_vs_cdi` (alpha sobre o CDI
@@ -71,7 +75,8 @@ negativos no walk-forward rolante depois de custo e IR — §18), arbitragem ON 
 (4 de 48 combinações positivas no teste 2014–2026; poucos pares líquidos — §19),
 virada de mês (forte até 2012, sumiu) e compra no fechamento/venda na abertura
 (prêmio noturno real, mas 2 bps de atrito por ponta já zeram — §20), executar o
-campeão no leilão de fechamento (ganha uma noite por entrada ≈ 0,1% a.a. — §21).
+campeão no leilão de fechamento (ganha uma noite por entrada ≈ 0,1% a.a. — §21),
+vender opções (vol implícita ≈ realizada na B3; venda coberta perde para a ação — §22).
 O paper-trade ainda roda o SMA+trailing; migrar para o campeão exige plugar o overlay
 no `live/planner.py`.
 
@@ -112,6 +117,7 @@ arquivo `.env` (na raiz, fora do git) e teste com `python scripts/test_telegram.
 | `trader/intraday/` | `costs` (custo por ponta XP + B3), `sessions` (pregão em BRT), `strategies` (momentum intraday, ORB, scalp M1 → lista de trades), `engine` (resultado diário, CDI, IR day trade) |
 | `trader/pairs/` | `spread` (log spread, z-score, elegibilidade, meia-vida, ADF), `signals` (estado do par), `portfolio` (slots, execução no open seguinte, aluguel) |
 | `trader/seasonal/` | `calendar` (pregão do mês, janela da virada), `timing` (estar ou não posicionado, execução no leilão de fechamento ou na abertura) |
+| `trader/options/` | `bs` (Black-Scholes, vol implícita), `chain` (vencimentos mensais, strike com livro são), `writer` (venda coberta, put coberta por caixa, trava) |
 | `scripts/` | pontos de entrada |
 | `tests/` | custos + causalidade do sinal |
 

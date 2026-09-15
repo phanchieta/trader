@@ -594,6 +594,66 @@ entrada só ganha **uma** noite (~6 bps) por real comprado — com giro de compr
 ~1,5× o patrimônio por ano, dá ~0,1% a.a. Não compensa rodar o executor às 16h50 e
 depender do leilão. Execução continua na abertura seguinte.
 
+### 22. Vender opções — prêmio de volatilidade na B3 (`research_options.py`)
+
+Ideia: a vol implícita costuma ficar acima da realizada, então quem vende opção é
+pago para correr risco de cauda; com CDI alto, put coberta por caixa = CDI + prêmio.
+
+**Dados — COTAHIST da B3** (`scripts/pull_cotahist.py`, `trader/data/cotahist.py`,
+`scripts/build_options_db.py`): arquivo anual com **todos** os negócios desde 2008
+(~10 MB/ano em 2008 a ~90 MB/ano em 2025), largura fixa, com melhor oferta de compra
+e de venda no fechamento, strike (já ajustado por proventos) e vencimento. O servidor
+estrangula conexão longa — o baixador reconecta retomando com Range. Guardado em
+`data/b3/cotahist_<ano>.parquet` (raízes PETR, VALE, BOVA, ITUB, BBDC).
+- **Oferta-lixo no livro:** ex. put PETRR85 em mai/2017 com ask R$60,00 numa opção de
+  R$2,20 → marcar pelo meio do livro criava drawdown de −300%. Marcação agora usa o
+  último negócio, ou meio de livro com spread ≤ 50%, sempre entre intrínseco e teto.
+- Liquidez: calls da PETR4 R$10–38 bi/ano desde 2008; puts da PETR4 só relevantes a
+  partir de 2014; opções de VALE3 (ON) desde 2017; BOVA11 desde 2020.
+
+`trader/options/` — `bs` (Black-Scholes, vol implícita), `chain` (vencimentos
+mensais, escolha de strike com livro são), `writer` (venda coberta sem alavancagem:
+a cada rolagem volta a 100% em ação; put coberta por caixa; trava de baixa
+opcional). Vende pelo bid, compra pelo ask, tarifa B3 0,064% do prêmio por ponta
+(0,058% negociação + 0,006% liquidação), exercício 0,08%/0,05% do notional, CDI no
+caixa, IR 15%.
+
+**Vol implícita (call no dinheiro, 1 mês) x realizada até o vencimento:**
+
+| ativo | meses | implícita | realizada | implícita > realizada | diferença mediana | média |
+|---|---|---|---|---|---|---|
+| PETR4 2008–26 | 224 | 38% | 39% | 57% | +2,1 p.p. | −0,3 p.p. |
+| VALE3 2017–26 | 109 | 31% | 32% | 62% | +1,6 p.p. | −0,4 p.p. |
+| BOVA11 2016–26 | 96 | 21% | 20% | 65% | +1,5 p.p. | +0,5 p.p. |
+
+**Na B3 a opção não é cara na média:** o "prêmio do seguro" aparece no mês típico
+(+1,5 a +2 p.p.) e os meses de crash (2008, jan/2016, mai/2018, mar/2020) devolvem.
+
+**Teste (variante escolhida pelo Sharpe/CDI no treino), alpha sobre o CDI a.a.:**
+
+| ativo / família | treino → teste | buy & hold | escolhida | alpha teste | Sh/CDI | maxDD | no meio do livro |
+|---|---|---|---|---|---|---|---|
+| PETR4 venda coberta | 2008–16 → 2017–26 | +21,5% (Sh 0,66) | strike +10% | +14,3% | 0,54 | −60% | +15,3% |
+| PETR4 put coberta | 2014–19 → 2019/07–26 | +20,9% | put no dinheiro | −2,2% | 0,05 | −57% | +0,1% |
+| VALE3 venda coberta | 2017/09–21 → 2021/07–26 | −9,7% (Sh −0,17) | strike +10% | −9,6% | −0,23 | −39% | −9,0% |
+| VALE3 put coberta | idem | −9,7% | put no dinheiro | −12,6% | −0,63 | −32% | −9,8% |
+| BOVA11 venda coberta | 2020–22/06 → 2022/07–26 | +3,8% (Sh 0,28) | strike +5% | −2,1% | −0,06 | −17% | −1,5% |
+| BOVA11 put coberta | idem | +3,8% | put −5% + trava −15% | +0,5% | 0,14 | −4% | +1,6% |
+
+- Venda coberta perde para segurar a ação nos três: corta as altas fortes e protege
+  pouco (prêmio de 0,2% a 2,3% do preço por mês).
+- Put pelada na PETR4 perde 40% em mar/2020; a trava corta o pior mês para −9% mas
+  come o prêmio (PETR4 put no dinheiro + trava −10%: +0,9%, Sh/CDI 0,13).
+- Único resultado bonito — BOVA11 put −5% pelada 2022–26: alpha +2,2% (pós-IR −0,1%),
+  Sh/CDI 0,48 — não foi a escolhida no treino e o período não teve crash (pior mês
+  −2%): a cauda simplesmente não apareceu.
+
+**Veredito:** não entra. Sem prêmio de volatilidade sistemático na média, vender
+opção na B3 é trocar CDI + pequenos prêmios por risco de cauda. **Subproduto
+valioso:** o COTAHIST tem o histórico de **todas** as ações negociadas, inclusive as
+que saíram da bolsa — dá para reconstruir o universo do modelo de fatores sem viés
+de sobrevivência (§14c), faltando só ajustar desdobramentos e proventos.
+
 ---
 
 ## CAMPEÃO
@@ -753,6 +813,10 @@ separado do sistema — não uma regra do programa.
   sobrevivência). Tentar outra fonte / outro formato de ticker (B3 COTAHIST).
 - **IR e viés de sobrevivência**: ajustar os números para depois de imposto e para
   o universo real antes de qualquer capital de verdade.
+- **Universo de fatores sem viés de sobrevivência via COTAHIST** (§22): os arquivos
+  anuais da B3 já estão em `data/b3` (2008–2026) com todas as ações, inclusive
+  deslistadas. Falta ajustar desdobramentos/grupamentos (FATCOT, saltos com ISIN
+  igual) e proventos, e refazer o §12 — a principal ressalva do modelo de fatores.
 - **Custo real do campeão na XP** (§18): o modelo assume corretagem zero em ação
   swing, mas as fontes indicam R$4,90 por ordem no home broker (via MT5: confirmar
   na nota de corretagem) + MT5 a R$299,90/mês. O backtest do campeão faz ~575
