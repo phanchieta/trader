@@ -412,6 +412,70 @@ com os 252 anteriores), OOS 2022-09..2026-09, alpha sobre o CDI a.a.:
 
 **Veredito:** não entra. Nosso horizonte continua sendo swing/posição.
 
+### 19. Arbitragem entre classes — ON x PN / unit x PN (`research_share_classes.py`)
+
+Ideia: duas classes da mesma empresa têm o mesmo fluxo de caixa; o spread
+log(A) − log(B) (preço ajustado por proventos, hedge 1:1 em valor, sem estimar
+beta) deveria oscilar em torno do prêmio de voto/tag along. Referência brasileira:
+Caldeira & Moura (2013, Brazilian Review of Finance) — carteira de pares
+cointegrados na B3 2005–2012, +16,4% a.a. de excesso, Sharpe 1,34, correlação
+< 0,15 com o Ibovespa. `trader/pairs/` (spread, z-score, máquina de estados,
+carteira com slots) + `scripts/pull_share_classes.py` + `share_classes.pairs` no
+`config/settings.yaml`.
+
+**Dados:** 38 pares candidatos; 13 tickers sem dados no Yahoo — **justamente as
+classes extintas** (CESP3/6, CPLE6, ELET3/6, LAME3/4, TIET3/4, TRPL3/4, VIVT4,
+RANI4) → viés de sobrevivência de direção desconhecida (unificação às vezes paga a
+classe descontada, às vezes pune quem estava vendido nela). Excluídos por dado
+podre: OIBR3/4 (recuperação judicial, saltos) e VALE3/5 (VALE5 extinta em 2017,
+ajuste inconsistente). Ficaram 28.
+
+**Liquidez derruba o universo.** Com R$5 mi/dia (mediana 60 pregões) nas DUAS
+pontas: PETR3/4 100% dos dias desde 2006, BBDC3/4 71%, USIM3/5 35%, ITUB3/4 37%,
+SAPR11/4 32%, KLBN11/4 22%, CMIG3/4 11% — o resto ~0 (a ON quase não negocia, ou a
+PN da empresa com unit é ilíquida). Com R$1 mi/dia entram mais ~10, caros de operar.
+
+**Diagnóstico dos spreads:**
+- ON/PN líquidos revertem **devagar**: meia-vida no treino (2006–2014) PETR 123,
+  BBDC 233, ITUB 102, USIM 114 pregões, e o ADF **não** confirma estacionariedade
+  (−1,3 a −2,0). O prêmio muda de patamar por anos: PETR3 sobre PETR4 foi de +3%
+  (2014) a +31% (2016); USIM3 chegou a valer ~3× a USIM5 na disputa
+  Ternium/Nippon (2015–16).
+- Unit x PN revertem rápido (SAPR 20, KLBN 9, SANB 6, TAEE 1 pregão; ADF −4,5 a
+  −17,7) — é o vai-e-vem do spread de compra e venda de uma unit que é cesta das
+  próprias classes, e a PN costuma ser ilíquida.
+
+**Backtest:** z-score móvel, entra além de ±entry, sai dentro de ±exit, stop |z| > 4,
+prazo 60 ou 250 pregões (o 250 foi incluído porque a meia-vida no TREINO deu
+100–230), até 8 pares abertos, bruto ≤ 100%, neutro em valor (patrimônio no CDI),
+execução na abertura seguinte, custo por ponta, aluguel no vendido. Universos
+definidos antes: **líquido** (R$5 mi, 8 bps, aluguel 2%) e **amplo** (R$1 mi,
+20 bps, aluguel 4%). Grid de 48 (janela 20/60/120/250 × entrada 1,5/2/2,5 × saída
+0/0,5 × prazo 60/250), escolha no treino 2006-01..2014-04, teste 2014-04..2026-09:
+
+| universo | escolhido no treino | Sh/CDI treino | alpha teste | pós-IR | Sh/CDI teste | maxDD | expo |
+|---|---|---|---|---|---|---|---|
+| líquido | janela 60, entra 2,5, sai 0,5, prazo 60 | +0,35 | −0,1% | −1,1% | −0,06 | −1% | 0,10 |
+| amplo | janela 60, entra 2,5, sai 0,5, prazo 60 | −0,19 | −1,6% | −2,5% | −0,96 | −6% | 0,19 |
+
+- Grid inteiro no teste: líquido **4 de 48** com Sh/CDI positivo (mediana −0,20);
+  amplo **0 de 48** (mediana −0,96). Não é escolha de parâmetro.
+- Walk-forward rolante (treino 3 anos, teste 1 ano, 2009–2026): líquido alpha 0,0%,
+  Sh/CDI −0,02; amplo −1,7%, −0,90. Excesso anual do líquido oscila entre −1,3% e
+  +1,3% — nunca vira nada.
+- Custo otimista (4 bps, aluguel 1%): líquido Sh/CDI +0,16, alpha +0,1% — nem de
+  graça rende.
+- Contribuição por par no teste (antes de custo): BBDC +1,6%, SAPR +1,5%, KLBN
+  +0,7%, PETR −0,7%; no amplo, **USIM −8,0%** (a disputa de controle) apaga o resto.
+- Correlação diária com o campeão −0,02 e com o Ibovespa +0,04 — é neutra de verdade,
+  mas sem retorno não diversifica: campeão + pares por cima Sh/CDI 0,47 vs 0,48
+  sozinho (líquido); 0,27 (amplo).
+
+**Veredito:** não entra. O Sharpe/CDI de +0,35 no treino (2006–2014) bate com a era
+em que pares funcionavam na B3 (Caldeira & Moura, 2005–2012) — e **sumiu** depois.
+Liquidez limita o universo a ~6 pares, os líquidos revertem em meses com mudança
+de patamar, e evento societário (controle, conversão) é a cauda que destrói.
+
 ---
 
 ## CAMPEÃO

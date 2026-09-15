@@ -23,7 +23,7 @@ Pré-imposto. Rodando no paper-trade da conta demo.
 
 **Dados** — `pull_daily` `pull_basket` `pull_universe` `pull_factor_universe`
 `pull_futures_proxy` `pull_cdi` `pull_mt5_history` `pull_intraday` `pull_mt5_intraday`
-(WIN/WDO/PETR4 em M5 e M1, 5 anos, do MT5 da XP)
+(WIN/WDO/PETR4 em M5 e M1, 5 anos, do MT5 da XP) `pull_share_classes` (ON/PN/units)
 
 **Pesquisa** — `research_strategies` (trend family + vol-target) ·
 `research_cross_sectional` (momentum cross-sectional — falhou) · `research_futures`
@@ -33,7 +33,8 @@ Pré-imposto. Rodando no paper-trade da conta demo.
 perde pro buy&hold e tem cauda feia) · `research_markov_regime` (regime de Markov
 do vídeo + HMM — persistência é artefato da janela; dominado pelo campeão) ·
 `research_intraday` (scalping/day trade em WIN, WDO e PETR4 com custos reais da XP
-— nada bate o CDI depois de custo e IR) ·
+— nada bate o CDI depois de custo e IR) · `research_share_classes` (arbitragem ON x PN
+e unit x PN — funcionou até 2014, sumiu depois) ·
 `compare_horizons` `deep_dive` `validate` `validate_intraday`
 
 **Campeão** — `stress_champion` (robustez) · `champion_vs_cdi` (alpha sobre o CDI
@@ -62,7 +63,8 @@ buy&hold e um nome que não recupera crava rombo permanente — §16 do RESEARCH
 regime de Markov "hedge fund method" (a persistência da matriz aparece igual com
 retornos embaralhados; é momentum de 20d com banda — §17), scalping/day trade
 (momentum intraday, rompimento de abertura e scalp de 1 min em WIN/WDO/PETR4 —
-negativos no walk-forward rolante depois de custo e IR — §18).
+negativos no walk-forward rolante depois de custo e IR — §18), arbitragem ON x PN
+(4 de 48 combinações positivas no teste 2014–2026; poucos pares líquidos — §19).
 O paper-trade ainda roda o SMA+trailing; migrar para o campeão exige plugar o overlay
 no `live/planner.py`.
 
@@ -101,6 +103,7 @@ arquivo `.env` (na raiz, fora do git) e teste com `python scripts/test_telegram.
 | `trader/backtest/` | `engine` (sem look-ahead, executa no open seguinte), `metrics`, `split` (treino/teste, walk-forward), `validation` (grid-search no treino, medição OOS) |
 | `trader/regime/` | `markov` (cadeia visível do vídeo: rótulo 20d, matriz expansível, sinal), `hmm` (HMM gaussiano / filtro de Hamilton, só numpy) |
 | `trader/intraday/` | `costs` (custo por ponta XP + B3), `sessions` (pregão em BRT), `strategies` (momentum intraday, ORB, scalp M1 → lista de trades), `engine` (resultado diário, CDI, IR day trade) |
+| `trader/pairs/` | `spread` (log spread, z-score, elegibilidade, meia-vida, ADF), `signals` (estado do par), `portfolio` (slots, execução no open seguinte, aluguel) |
 | `scripts/` | pontos de entrada |
 | `tests/` | custos + causalidade do sinal |
 

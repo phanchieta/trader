@@ -86,3 +86,47 @@ blend:
   champion_weight: 0.5      # fração do capital na sleeve campeão; o resto vai para fatores
   factor_quintile: 0.20     # top 20% do score de fatores (quintil)
   # sleeve de fatores rebalanceia por trimestre-calendário; vol-target diário
+
+share_classes:
+  # pares de classes da mesma empresa [A, B]; spread = log(A) - log(B)
+  # ON x PN, ou unit x PN quando a unit é a classe líquida (um par por empresa)
+  pairs:
+    - [PETR3, PETR4]
+    - [ITUB3, ITUB4]
+    - [BBDC3, BBDC4]
+    - [ITSA3, ITSA4]
+    - [GGBR3, GGBR4]
+    - [GOAU3, GOAU4]
+    - [CMIG3, CMIG4]
+    - [USIM3, USIM5]
+    - [BRAP3, BRAP4]
+    - [CPLE3, CPLE6]
+    - [ELET3, ELET6]
+    - [BRKM3, BRKM5]
+    - [TAEE11, TAEE4]
+    - [SAPR11, SAPR4]
+    - [KLBN11, KLBN4]
+    - [SANB11, SANB4]
+    - [ENGI11, ENGI4]
+    - [BPAC11, BPAC5]
+    - [ALUP11, ALUP4]
+    - [TRPL3, TRPL4]
+    - [ISAE3, ISAE4]
+    - [ALPA3, ALPA4]
+    - [RAPT3, RAPT4]
+    - [UNIP3, UNIP6]
+    - [CESP3, CESP6]
+    - [BRSR3, BRSR6]
+    - [CLSC3, CLSC4]
+    - [POMO3, POMO4]
+    - [EUCA3, EUCA4]
+    - [TASA3, TASA4]
+    - [BEES3, BEES4]
+    - [RANI3, RANI4]
+    - [CGAS3, CGAS5]
+    - [TIET3, TIET4]
+    - [VIVT3, VIVT4]
+    - [OIBR3, OIBR4]
+    - [LAME3, LAME4]
+    - [VALE3, VALE5]
+  min_traded_value: 5000000   # R$/dia (mediana 60 pregões) nas DUAS pontas para operar o par
