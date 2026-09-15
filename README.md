@@ -37,7 +37,8 @@ do vídeo + HMM — persistência é artefato da janela; dominado pelo campeão)
 — nada bate o CDI depois de custo e IR) · `research_share_classes` (arbitragem ON x PN
 e unit x PN — funcionou até 2014, sumiu depois) · `research_calendar` (virada de mês e
 overnight x pregão — o retorno de ação na B3 sai quase todo à noite, mas ida e volta
-diária não paga o custo) ·
+diária não paga o custo) · `research_exec_timing` (campeão executando no leilão de
+fechamento em vez da abertura — +0,1 a +0,2% a.a., ruído) ·
 `compare_horizons` `deep_dive` `validate` `validate_intraday`
 
 **Campeão** — `stress_champion` (robustez) · `champion_vs_cdi` (alpha sobre o CDI
@@ -69,7 +70,8 @@ retornos embaralhados; é momentum de 20d com banda — §17), scalping/day trad
 negativos no walk-forward rolante depois de custo e IR — §18), arbitragem ON x PN
 (4 de 48 combinações positivas no teste 2014–2026; poucos pares líquidos — §19),
 virada de mês (forte até 2012, sumiu) e compra no fechamento/venda na abertura
-(prêmio noturno real, mas 2 bps de atrito por ponta já zeram — §20).
+(prêmio noturno real, mas 2 bps de atrito por ponta já zeram — §20), executar o
+campeão no leilão de fechamento (ganha uma noite por entrada ≈ 0,1% a.a. — §21).
 O paper-trade ainda roda o SMA+trailing; migrar para o campeão exige plugar o overlay
 no `live/planner.py`.
 

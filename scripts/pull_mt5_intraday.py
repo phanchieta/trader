@@ -7,6 +7,7 @@ Profundidade na XP: M5 desde 2021-09, M1 ~13 meses.
 
     python scripts/pull_mt5_intraday.py              # M5 + M1
     python scripts/pull_mt5_intraday.py M5
+    python scripts/pull_mt5_intraday.py D1 M5 --symbols VALE3,ITUB4,BBDC4,ABEV3
 """
 from __future__ import annotations
 
@@ -26,9 +27,14 @@ cfg = yaml.safe_load(Path("config/settings.yaml").read_text(encoding="utf-8"))
 OFFSET = cfg["mt5"]["server_utc_offset_hours"]
 TERM = cfg["mt5"]["terminal_path"] or None
 OUT = Path(cfg["data"]["dir"])
+args = sys.argv[1:]
 SYMBOLS = ["WIN$D", "WIN$N", "WDO$D", "WDO$N", "PETR4"]
-TIMEFRAMES = [tf.upper() for tf in sys.argv[1:]] or ["M5", "M1"]
-CHUNK = {"M5": 60, "M1": 20}
+if "--symbols" in args:
+    k = args.index("--symbols")
+    SYMBOLS = args[k + 1].split(",")
+    args = args[:k] + args[k + 2:]
+TIMEFRAMES = [tf.upper() for tf in args] or ["M5", "M1"]
+CHUNK = {"D1": 3650, "M5": 60, "M1": 20}
 START = datetime(2021, 1, 1, tzinfo=timezone.utc)
 
 

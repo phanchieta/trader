@@ -549,7 +549,50 @@ péssimo —, mas explorar isso exige ida e volta diária: 252 × qualquer atrit
 fecha positivo com custo exatamente igual à taxa da B3 **e** caixa rendendo CDI;
 2 bps de slippage por ponta já zeram. Derivado útil: testar o campeão entrando no
 **leilão de fechamento** (sinal calculado minutos antes) em vez da abertura
-seguinte — cada entrada ganharia a noite que hoje perde.
+seguinte — cada entrada ganharia a noite que hoje perde (→ §21).
+
+### 21. Campeão executando no leilão de fechamento (`research_exec_timing.py`)
+
+`trader/backtest/exec_timing.py` (`run_exec_timing`): o mesmo peso-alvo executado em
+horários diferentes — compra e venda separadamente na abertura seguinte, no leilão de
+fechamento do próprio dia ou no do dia seguinte; `close_same_weights` permite usar
+nas compras do fechamento um sinal calculado antes do leilão. Com tudo na abertura
+seguinte reproduz exatamente o `run_target_portfolio` (teste).
+
+**Parte 1 — Yahoo, cesta, CDI no caixa, custo B3:**
+
+| variante | alpha 2008–15 | CAGR 2015–26 | alpha | pós-IR | Sh/CDI | ordens/ano |
+|---|---|---|---|---|---|---|
+| A atual: tudo na abertura seguinte | −1,1% | 14,0% | +4,3% | +3,0% | 0,59 | 574 |
+| B tudo no fechamento (ideal) | −2,0% | 14,0% | +4,2% | +2,9% | 0,57 | 578 |
+| C compra no fechamento (ideal), vende na abertura | −1,4% | 14,1% | +4,4% | +3,1% | 0,59 | 675 |
+| D compra no fechamento do dia seguinte, vende na abertura | −1,7% | 13,7% | +4,0% | +2,7% | 0,56 | 653 |
+| F espelho: compra na abertura, vende no fechamento | −1,1% | 13,5% | +3,7% | +2,5% | 0,51 | 692 |
+
+C − A por ano oscila entre −1,6% e +1,4% sem padrão.
+
+**Parte 2 — MT5 2021–2026 (preço bruto, só para comparar variantes), variante
+realista E:** a compra vai para o leilão de fechamento com SuperTrend e vol-target
+recalculados todo dia com a barra parcial até 16h50/17h50 (máxima, mínima e último
+preço das barras de 5 min). O sinal das 16h50 bate com o do fechamento em **99,3%**
+dos casos.
+
+| variante | alpha | pós-IR | Sh/CDI | ordens/ano |
+|---|---|---|---|---|
+| A atual | +1,7% | −0,1% | 0,28 | 482 |
+| C ideal | +1,5% | −0,3% | 0,24 | 520 |
+| D dia seguinte | +1,1% | −0,7% | 0,19 | 545 |
+| **E sinal das 16h50** | +1,9% | +0,1% | 0,30 | 531 |
+
+E − A por ano: +0,7 / +0,7 / +1,1 / −1,5 / −0,7 / +0,7% — ruído.
+
+**Veredito:** não muda nada — +0,1 a +0,2% a.a., dentro do ruído, com ~10–15% mais
+ordens (compra e venda em horários diferentes geram mais ajustes de lote). **Por
+quê:** o prêmio noturno é grande para quem está posicionado nas 252 noites; o
+campeão já dorme posicionado em todas as noites em que está comprado, e antecipar a
+entrada só ganha **uma** noite (~6 bps) por real comprado — com giro de compra de
+~1,5× o patrimônio por ano, dá ~0,1% a.a. Não compensa rodar o executor às 16h50 e
+depender do leilão. Execução continua na abertura seguinte.
 
 ---
 
@@ -710,11 +753,6 @@ separado do sistema — não uma regra do programa.
   sobrevivência). Tentar outra fonte / outro formato de ticker (B3 COTAHIST).
 - **IR e viés de sobrevivência**: ajustar os números para depois de imposto e para
   o universo real antes de qualquer capital de verdade.
-- **Campeão executando no leilão de fechamento** (§20b): hoje o sinal do fechamento
-  executa na abertura seguinte; como a noite rende e o pregão perde na média, entrar
-  no leilão de fechamento (sinal com o preço de ~16h50/17h50) deve ganhar uma noite
-  por entrada. Barato de testar no backtest; exige rodar o executor antes do
-  fechamento, não às 17h35.
 - **Custo real do campeão na XP** (§18): o modelo assume corretagem zero em ação
   swing, mas as fontes indicam R$4,90 por ordem no home broker (via MT5: confirmar
   na nota de corretagem) + MT5 a R$299,90/mês. O backtest do campeão faz ~575
