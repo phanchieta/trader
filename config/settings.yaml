@@ -19,7 +19,9 @@ mt5:
 
 costs:
   modalidade: swing              # swing | daytrade
-  corretagem_por_ordem: 0.0      # XP ação à vista = 0
+  corretagem_por_ordem: 4.90     # XP, confirmado pela corretora em 2026-09-23: R$4,90
+                                 # por ordem de ação no swing (day trade com RLP = 0;
+                                 # mesmo custo em qualquer plataforma; MT5 é gratuito)
   emolumentos_pct_swing: 0.000325     # ~0,0325% — CONFERIR tabela vigente da B3
   emolumentos_pct_daytrade: 0.00005   # ~0,005%  — CONFERIR
   iss_sobre_corretagem: 0.0
@@ -81,6 +83,9 @@ risk_overlay:
   max_leverage: 1.0         # nunca alavanca; só corta exposição
   trailing_stop_pct: 0.10   # recuo do pico que protege o lucro (só arma no azul)
                             # varredura 8–20% todas batem "sem stop"; 10% = meio robusto
+  rebalance_band: 0.15      # só ajusta a posição se o desvio do alvo passar disso.
+                            # Com corretagem de R$4,90/ordem, derruba de ~560 para
+                            # ~90 ordens/ano sem piorar o resultado (§24)
 
 blend:
   champion_weight: 0.5      # fração do capital na sleeve campeão; o resto vai para fatores

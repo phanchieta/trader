@@ -47,6 +47,7 @@ TRAIL = None
 TARGET_VOL = cfg["risk_overlay"]["target_ann_vol"]
 VOL_LB = cfg["risk_overlay"]["vol_lookback"]
 MAX_LEV = cfg["risk_overlay"]["max_leverage"]
+BAND = cfg["risk_overlay"].get("rebalance_band", 0.0)
 HIST_START = datetime(2019, 1, 1, tzinfo=timezone.utc)
 _alert_lines: list[str] = []
 
@@ -80,7 +81,8 @@ with mt5_session(TERM) as mt5:
     print(f"vol-target: vol cesta {float(_yz.iloc[-1]):.1%} a.a. -> multiplicador {overlay:.2f}")
 
     plan = plan_targets(frames, STRAT, state, capital_per_name=cap_per_name,
-                        lot_size=LOT, trailing_stop=TRAIL, overlay_mult=overlay)
+                        lot_size=LOT, trailing_stop=TRAIL, overlay_mult=overlay,
+                        rebalance_band=BAND)
     for note in plan.notes:
         print(f"[trailing] {note}")
         _alert_lines.append(f"🛑 {note}")

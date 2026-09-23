@@ -86,21 +86,35 @@ for y in years[1:]:
     history.append((y, [panel[i]["codneg"].reindex(CAL).loc[:decide].dropna().iloc[-1] for i in picks]))
 
 
-def champion(members: pd.DataFrame, frames: dict, win: pd.DatetimeIndex):
-    cols = [c for c in members.columns if members.loc[win, c].any()]
-    sig = pd.DataFrame({c: ST.generate_signals(frames[c].dropna(subset=["close"])).reindex(CAL) for c in cols}).fillna(0.0)
-    vol = pd.DataFrame({c: yang_zhang(frames[c].dropna(subset=["close"]), window=RO["vol_lookback"]).reindex(CAL)
-                        for c in cols})
-    basket_vol = vol.where(members[cols] > 0).mean(axis=1)
-    mult = (RO["target_ann_vol"] / basket_vol).clip(upper=RO["max_leverage"]).shift(1).fillna(0.0)
-    tgt = (sig * members[cols] / N).reindex(win)
-    res = run_target_portfolio({c: frames[c] for c in cols}, tgt, COSTS, overlay_mult=mult.reindex(win),
-                               cash_rate=CDI_N, target_is_weight=True, initial_equity=EQ0, lot_size=LOT)
+_CACHE: dict = {}
+
+
+def _targets(members: pd.DataFrame, frames: dict, win: pd.DatetimeIndex, key: str):
+    if key not in _CACHE:
+        cols = [c for c in members.columns if members.loc[win, c].any()]
+        sig = pd.DataFrame({c: ST.generate_signals(frames[c].dropna(subset=["close"])).reindex(CAL)
+                            for c in cols}).fillna(0.0)
+        vol = pd.DataFrame({c: yang_zhang(frames[c].dropna(subset=["close"]), window=RO["vol_lookback"]).reindex(CAL)
+                            for c in cols})
+        basket_vol = vol.where(members[cols] > 0).mean(axis=1)
+        mult = (RO["target_ann_vol"] / basket_vol).clip(upper=RO["max_leverage"]).shift(1).fillna(0.0)
+        _CACHE[key] = (cols, sig * members[cols] / N, mult)
+    return _CACHE[key]
+
+
+def champion(members: pd.DataFrame, frames: dict, win: pd.DatetimeIndex, *, key: str | None = None,
+             band: float = 0.0, eq0: float = EQ0):
+    cols, tgt_full, mult = _targets(members, frames, win, key or f"{id(members)}:{win[0]}:{win[-1]}")
+    res = run_target_portfolio({c: frames[c] for c in cols}, tgt_full.reindex(win), COSTS,
+                               overlay_mult=mult.reindex(win), cash_rate=CDI_N, target_is_weight=True,
+                               initial_equity=eq0, lot_size=LOT, rebalance_band=band)
     eq = res.equity.set_axis(res.equity.index.tz_localize("UTC"))
     b = vs_benchmark(eq, CDI)
+    yrs = (win[-1] - win[0]).days / 365.25
     return {"cagr": b["cagr_estrategia"], "alpha": b["alpha_aa"], "ir": after_tax_summary(eq, CDI)["alpha_pos_ir"],
             "sh": b["sharpe_sobre_cdi"], "dd": float((eq / eq.cummax() - 1).min()),
-            "expo": res.stats["exposure_media"]}
+            "expo": res.stats["exposure_media"], "ordens": res.stats["n_trades"] / yrs,
+            "custo": res.stats["custo_total_R$"] / yrs}
 
 
 print("=" * 100)
@@ -133,3 +147,27 @@ for lo, hi in (("2014-01-01", "2026-12-31"), ("2010-01-01", "2026-12-31")):
     for name, r in rows_out:
         print(f"  {name:30} {_pct(r['cagr']):>6} {_pct(r['alpha']):>6} {_pct(r['ir']):>7} {r['sh']:>+6.2f} "
               f"{_pct(r['dd'], '{:.0%}'):>6} {r['expo']:>5.2f}")
+
+# ---- banda de rebalanceamento x capital, com a corretagem real (R$4,90/ordem)
+print("\n" + "=" * 100)
+print(f"BANDA DE REBALANCEAMENTO x CAPITAL — cesta causal, corretagem R${COSTS.corretagem_por_ordem:.2f}/ordem")
+print("=" * 100)
+win = CAL[(CAL >= "2014-01-01") & (CAL <= "2026-12-31")]
+print(f"{'capital':>10} " + " ".join(f"{'banda ' + f'{b:.0%}':>16}" for b in (0.0, 0.10, 0.20, 0.30)))
+print(f"{'':10} " + " ".join(f"{'alpha pós-IR/ord':>16}" for _ in range(4)))
+for eq0 in (100_000, 250_000, 500_000, 1_000_000):
+    cells = []
+    for band in (0.0, 0.10, 0.20, 0.30):
+        r = champion(member, FR, win, key="causal", band=band, eq0=float(eq0))
+        cells.append(f"{r['ir']:>+9.2%}/{r['ordens']:>5.0f}")
+    print(f"{eq0:>10,} " + " ".join(f"{c:>16}" for c in cells))
+print("\nmesma coisa sem corretagem (referência do que a taxa custa):")
+sem = B3Costs.from_config({**cfg, "costs": {**cfg["costs"], "corretagem_por_ordem": 0.0}})
+_COSTS = COSTS
+for band in (0.0, 0.20):
+    globals()["COSTS"] = sem
+    r0 = champion(member, FR, win, key="causal", band=band, eq0=1_000_000.0)
+    globals()["COSTS"] = _COSTS
+    r1 = champion(member, FR, win, key="causal", band=band, eq0=1_000_000.0)
+    print(f"  banda {band:.0%}: sem corretagem alpha pós-IR {r0['ir']:+.2%} | com R$4,90 {r1['ir']:+.2%} "
+          f"| {r1['ordens']:.0f} ordens/ano = R${r1['ordens'] * 4.90:,.0f}/ano")

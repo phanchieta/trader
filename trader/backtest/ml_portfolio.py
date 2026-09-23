@@ -22,7 +22,11 @@ def run_target_portfolio(frames: dict, target: pd.DataFrame, costs: B3Costs, *,
                          trailing_stop: float | None = None,
                          cash_rate: pd.Series | None = None,
                          target_is_weight: bool = False,
-                         borrow_rate_aa: float = 0.0) -> PortfolioResult:
+                         borrow_rate_aa: float = 0.0,
+                         rebalance_band: float = 0.0) -> PortfolioResult:
+    """`rebalance_band`: só ajusta a posição quando o desvio do alvo passa dessa
+    fração do alvo (0 = ajusta todo dia). Corta as ordens de 100 ações que o
+    vol-target gera — o que importa quando a corretagem é por ordem."""
     syms = list(frames)
     idx = target.index
     n = len(syms)
@@ -71,6 +75,9 @@ def run_target_portfolio(frames: dict, target: pd.DataFrame, costs: B3Costs, *,
             if eff_t != 0.0 and po > 0.0 and mult[i] > 0.0:
                 desired = np.trunc(budget * eff_t * mult[i] / po / lot_size) * lot_size
             delta = desired - shares[s]
+            if rebalance_band and desired != 0.0 and shares[s] != 0.0 \
+                    and abs(delta) <= rebalance_band * abs(desired):
+                delta = 0.0                      # dentro da banda: não mexe
             if delta != 0.0:
                 fee = costs.order_cost(po, delta)
                 cash -= delta * po + fee

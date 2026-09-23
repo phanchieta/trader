@@ -71,6 +71,22 @@ def test_persistencia_e_artefato_da_janela_sobreposta():
     assert np.diag(transition_matrix(st.iloc[::20])).max() < 0.6
 
 
+def test_banda_de_rebalanceamento_corta_ordens():
+    idx = pd.date_range("2020-01-01", periods=40, freq="B")
+    rng = np.random.default_rng(3)
+    px = 10.0 * np.exp(np.cumsum(rng.normal(0, 0.01, len(idx))))
+    frame = pd.DataFrame({"open": px, "high": px, "low": px, "close": px, "volume": 1e6}, index=idx)
+    tgt = pd.DataFrame({"X": 1.0}, index=idx)
+    # o vol-target oscilando é o que gera os ajustes de 100 ações todo dia
+    mult = pd.Series(0.5 * (1.0 + 0.03 * np.sin(np.arange(len(idx)))), index=idx)
+    kw = dict(initial_equity=100_000.0, lot_size=100, target_is_weight=True, overlay_mult=mult)
+    tight = run_target_portfolio({"X": frame}, tgt, B3Costs(), **kw)
+    banded = run_target_portfolio({"X": frame}, tgt, B3Costs(), rebalance_band=0.10, **kw)
+    assert tight.stats["n_trades"] > 20
+    assert banded.stats["n_trades"] < tight.stats["n_trades"] / 2
+    assert banded.stats["custo_total_R$"] < tight.stats["custo_total_R$"]
+
+
 def test_aluguel_do_short_e_exposicao():
     idx = pd.date_range("2020-01-01", periods=60, freq="B")
     px = pd.DataFrame({"open": 10.0, "high": 10.0, "low": 10.0, "close": 10.0,

@@ -354,6 +354,8 @@ notional da `$N`. `WIN$` = ajuste proporcional. Pregão: WIN/WDO 9:00–18:25; �
   minicontrato. Ação swing no home broker: fontes indicam **R$4,90 por ordem**.
 - MetaTrader 5 na XP: **R$299,90/mês** na tabela comparativa de plataformas (há
   menção a isenção por volume de minicontratos — não confirmado).
+  **Corrigido em 2026-09-23 pela própria XP (§24): o MT5 é gratuito**; o custo é o
+  mesmo em qualquer plataforma e day trade com RLP é zero.
 - IR day trade 20% do lucro líquido mensal (o 1% retido é antecipação).
 
 Por operação completa com 1 tick de slippage por ponta: **WIN R$2,50/contrato =
@@ -729,6 +731,44 @@ backtest**, e desconfiar do Yahoo para ações da B3.
 
 ---
 
+### 24. Custo real da XP e banda de rebalanceamento (`research_champion_bias.py`)
+
+**Confirmado pela corretora em 2026-09-23:** ação no **swing trade custa R$4,90 por
+ordem**; day trade com RLP ativo é **zero**; o custo é o mesmo em qualquer
+plataforma e o **MetaTrader 5 é gratuito** (a mensalidade de R$299,90 da tabela de
+plataformas do §18 não se aplica). `config/settings.yaml` passou a ter
+`costs.corretagem_por_ordem: 4.90`.
+
+O campeão rebalanceia todo dia pelo vol-target, e a maior parte das ordens é ajuste
+de 100 ações: **~560 ordens/ano = R$2,7 mil/ano**, que em R$100 mil de capital é
+2,7% a.a. — mais que todo o alpha estimado. `rebalance_band` (em
+`run_target_portfolio` e em `trader/live/planner.py`, default 0,15) só mexe na
+posição quando o desvio do alvo passa da banda.
+
+Cesta causal (§23), 2014–2026, alpha pós-IR sobre o CDI / ordens por ano:
+
+| capital | sem banda | banda 10% | banda 20% | banda 30% |
+|---|---|---|---|---|
+| R$100 mil | +0,32% / 209 | +0,58% / 98 | +0,52% / 58 | +0,58% / 47 |
+| R$250 mil | +0,27% / 352 | +0,72% / 88 | +0,56% / 55 | +0,55% / 45 |
+| R$500 mil | +0,39% / 469 | +0,72% / 86 | +0,73% / 54 | +0,54% / 45 |
+| R$1 milhão | +0,48% / 558 | +0,77% / 86 | +0,54% / 54 | +0,58% / 45 |
+
+Sem banda, a corretagem custa R$2,7 mil/ano (alpha 0,64% → 0,48% em R$1 mi); com
+banda de 20%, R$264/ano e o alpha não muda. **A banda tira a corretagem da conta do
+capital mínimo** — com ela, R$100 mil já fica em ~R$480/ano (0,48% a.a.) e R$250 mil
+em 0,17%. O alpha continua sendo ~+0,5 a +0,8% pós-IR na cesta causal 2014–26, com
+incerteza maior que ele mesmo (2010–26 deu −1,1%): a banda melhora a execução, não
+transforma o programa em fonte de retorno.
+
+**Corretora com corretagem zero** (Clear/Rico, do mesmo grupo, ou outra): tira os
+R$4,90 da conta e o capital mínimo passa a depender só do arredondamento em lote —
+que quase não pesa (alpha +3,33% com R$50 mil contra +3,50% com R$3 milhões na cesta
+de hoje). A banda continua valendo: menos ordens, menos slippage, menos chance de
+erro operacional.
+
+---
+
 ## CAMPEÃO
 
 > **Atenção (2026-09-15, §23):** os números abaixo usam a cesta escolhida com a lista
@@ -901,10 +941,5 @@ separado do sistema — não uma regra do programa.
 - **Hipóteses para testar à frente** (não escolher com os dados de 2013–26): momentum
   12-1 sozinho e baixa vol no universo causal pareceram melhores que o combinado com
   as reversões.
-- **Custo real do campeão na XP** (§18): o modelo assume corretagem zero em ação
-  swing, mas as fontes indicam R$4,90 por ordem no home broker (via MT5: confirmar
-  na nota de corretagem) + MT5 a R$299,90/mês. O backtest do campeão faz ~575
-  ordens/ano (muitos ajustes de 100 ações pelo vol-target) → ~R$2,8 mil/ano em
-  corretagem + ~R$3,6 mil/ano de plataforma ≈ 0,64% a.a. em R$1 mi. Conferir antes
-  de capital real; se confirmado, pôr no `config/settings.yaml` e testar uma banda
-  de rebalanceamento (só ajustar se o desvio do alvo passar de X%).
+- ~~Custo real do campeão na XP~~ — **resolvido no §24** (corretagem confirmada,
+  MT5 gratuito, banda de rebalanceamento implementada).

@@ -25,7 +25,10 @@ class Plan:
 def plan_targets(frames: dict, strategy, state: PortfolioState, *,
                  capital_per_name: float, lot_size: int = 100,
                  trailing_stop: float | None = None,
-                 overlay_mult: float = 1.0) -> Plan:
+                 overlay_mult: float = 1.0, rebalance_band: float = 0.0) -> Plan:
+    """`rebalance_band`: mantém a posição atual quando o desvio do alvo é menor que
+    essa fração dele. Corta os ajustes de 100 ações do vol-target — com corretagem
+    de R$4,90 por ordem, é a diferença entre ~560 e ~60 ordens por ano."""
     plan = Plan()
     for sym, df in frames.items():
         ss = state.get(sym)
@@ -55,5 +58,8 @@ def plan_targets(frames: dict, strategy, state: PortfolioState, *,
         if eff != 0.0 and last_close > 0.0 and overlay_mult > 0.0:
             raw = capital_per_name * eff * overlay_mult / last_close
             desired = float(np.trunc(raw / lot_size) * lot_size)
+        if (rebalance_band and desired != 0.0 and ss.shares != 0.0
+                and abs(desired - ss.shares) <= rebalance_band * abs(desired)):
+            desired = ss.shares                       # dentro da banda: não mexe
         plan.targets[sym] = desired
     return plan

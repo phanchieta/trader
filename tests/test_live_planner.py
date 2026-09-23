@@ -64,6 +64,20 @@ def test_trailing_nao_arma_no_prejuizo():
 
 def test_overlay_mult_escala_o_alvo():
     frames = {"A": _frame([10, 10, 20.0])}
+    def _state_with(sym, shares):
+        st = PortfolioState()
+        st.get(sym).shares = shares
+        return st
+
+    frames_band = {"A": _frame([10, 10, 10.0])}
+    st = _state_with("A", 9500.0)                     # alvo 10.000: desvio de 5%
+    kept = plan_targets(frames_band, _Const(1.0), st, capital_per_name=100_000.0,
+                        rebalance_band=0.15)
+    assert kept.targets["A"] == 9500.0                # dentro da banda: não mexe
+    moved = plan_targets(frames_band, _Const(1.0), _state_with("A", 7000.0),
+                         capital_per_name=100_000.0, rebalance_band=0.15)
+    assert moved.targets["A"] == 10_000.0             # 30% fora: ajusta
+
     full = plan_targets(frames, _Const(1.0), PortfolioState(),
                         capital_per_name=10_000.0, overlay_mult=1.0).targets["A"]
     half = plan_targets(frames, _Const(1.0), PortfolioState(),
