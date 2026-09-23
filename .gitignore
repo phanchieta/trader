@@ -16,3 +16,7 @@ venv/
 # editores
 .vscode/
 .idea/
+
+# permissões locais do Claude Code (da máquina, não do projeto)
+.claude/settings.json
+.claude/settings.local.json
