@@ -44,7 +44,7 @@ if blend_p.exists():
 
 MIN_DIAS_CAGR = 60      # anualizar com menos que isso é ruído, não sinal
 
-print(f"{'':16} {'dias':>5} {'ret.acum':>10} {'maxDD':>8} {'CAGR/alpha':>16}")
+print(f"{'':16} {'marcas':>6} {'ret.acum':>10} {'vs CDI':>8} {'maxDD':>8} {'CAGR/alpha':>16}")
 for name, eq in rows:
     if len(eq) < 2:
         print(f"{name:16} {len(eq):>5}  (poucos pontos — volte em ~2 semanas)")
@@ -52,7 +52,8 @@ for name, eq in rows:
     s = _stats(eq, cdi)
     days = (eq.index[-1] - eq.index[0]).days
     ann = f"{s['cagr']:+.1%} / {s['alpha']:+.1%}" if days >= MIN_DIAS_CAGR else "(cedo p/ anualizar)"
-    print(f"{name:16} {s['n']:>5} {s['ret']:>+9.2%} {s['dd']:>+7.2%} {ann:>16}")
+    cdi_win = float((1.0 + cdi.reindex(eq.index).fillna(0.0)).prod() - 1.0)
+    print(f"{name:16} {s['n']:>6} {s['ret']:>+9.2%} {s['ret'] - cdi_win:>+7.2%} {s['dd']:>+7.2%} {ann:>16}")
 
 start = min(eq.index[0] for _, eq in rows)
 print(f"\ninício comum: {start.date()} | hoje: {pd.Timestamp.today().date()}")
