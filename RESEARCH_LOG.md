@@ -767,6 +767,79 @@ que quase não pesa (alpha +3,33% com R$50 mil contra +3,50% com R$3 milhões na
 de hoje). A banda continua valendo: menos ordens, menos slippage, menos chance de
 erro operacional.
 
+### 25. Alocação tática entre classes de ativo na B3 (`research_taa.py`) e campeão com mais ações (`research_champion_breadth.py`)
+
+Pedido: métodos com ganho consistente que superem o campeão honesto (cesta causal,
+CDI +0,6% pós-IR em 2014–26, −1,0% em 2010–26 com a corretagem real). Régua da §23:
+parâmetros da literatura, nada ajustado aqui, custos reais, IR.
+
+**Dados** (`scripts/pull_taa.py`, `trader/allocation/series.py`): ETFs da B3 em reais,
+com a referência antes do ETF existir descontada da diferença medida no período em
+que os dois coexistem — BOVA11 x ^BVSP (−0,09% a.a., correlação mensal 0,998),
+IVVB11 x ^SP500TR × dólar (−1,04%: taxa + imposto americano sobre dividendos), GOLD11 x
+GLD × dólar (−0,42%). SMAL11 só desde 2009. Em reais, 2005–2026: Ibovespa +9,6% a.a.
+(queda máx. −60%), S&P +12,9% (−57%), ouro +14,3% (−30%); **correlação mensal
+Ibov x S&P −0,05 e Ibov x ouro −0,25** — o dólar protege a bolsa brasileira.
+
+`trader/allocation/` — `signals` (Faber, dual momentum, carteira fixa; pesos no último
+pregão do mês), `engine` (execução no pregão seguinte, pesos flutuam no mês, CDI no
+caixa, 5 bps por ponta + R$4,90 por ordem, banda de 20%). Durante o trabalho um bug
+de fuso fazia as métricas compararem com CDI zero (alpha = CAGR); corrigido nos dois
+lados (métricas e crédito do CDI no caixa), com teste.
+
+**Principal registrada antes de rodar — Faber (2007):** 1/3 em cada um de Ibov, S&P
+e ouro se o mês fechou acima da média de 10 meses; senão a fatia vai para o CDI.
+R$100 mil, alpha sobre o CDI bruto:
+
+| estratégia | 2005–26 | 2005–15 | 2016–26 | Sh/CDI 05–26 | maxDD | anos > CDI | pior ano |
+|---|---|---|---|---|---|---|---|
+| só Ibovespa | −1,5% | −7,9% | +5,8% | 0,08 | −60% | 52% | −53% |
+| fixa 1/3 (Ibov, S&P, ouro) | +3,5% | −0,5% | +7,5% | 0,29 | −26% | 67% | −22% |
+| **Faber 10m (principal)** | **+2,1%** | −0,5% | +4,5% | 0,22 | **−18%** | 57% | −24% |
+| robustez Faber 8m / 12m | +2,6% / +2,2% | −0,6% / +0,1% | +5,7% / +4,1% | 0,26 / 0,23 | −18% | | |
+| Faber + small caps | | | +3,4% | | −16% | | |
+| dual momentum (Ibov, S&P) | +6,4% | +9,6% | +4,2% | 0,39 | −23% | 67% | −31% |
+
+Pós-IR (15,5% no mesmo modelo): Faber +1,2% a.a. em 2005–26 contra o CDI bruto — e o
+próprio CDI dá −0,8% nessa conta, então **depois de imposto dos dois lados a vantagem
+é de ~2 p.p.**
+
+- **Robusto ao parâmetro** (8, 10, 12 meses dão o mesmo). O filtro de tendência não
+  aumenta retorno — a carteira fixa rende mais —, **corta a queda** (−26% → −18%).
+- **O ganho vem da diversificação internacional em reais.** Trocando o S&P pelas
+  bolsas desenvolvidas fora dos EUA (EFA × dólar): Faber +1,2% a.a. em 2005–26
+  (2005–15 −1,5%, 2016–26 +3,7%), maxDD −17%. Só Ibov + ouro: +0,2%. Ou seja, ~0,9 p.p.
+  era a década excepcional do S&P; o resto é estrutural.
+- **Não é consistente ano a ano:** 57% dos anos acima do CDI; 2005–2015 (real
+  valorizado, boom de commodities) ficou no CDI; os ganhos se concentram em 2015–21 e
+  2024–25; 2022 teve −24% contra o CDI (S&P caiu e o real valorizou juntos).
+- Dual momentum é o melhor número, mas é tudo-ou-nada em um ativo (pior ano −31%),
+  não era a principal e com 2 ativos é quase uma aposta por regime — não validado.
+
+**Contra o campeão** (cesta causal, mesmo custo), e meio a meio (curvas somadas, sem
+rebalancear entre elas):
+
+| janela | campeão causal | Faber 10m | meio a meio | correlação |
+|---|---|---|---|---|
+| 2010–26 alpha / pós-IR / Sh / maxDD | −0,2% / −1,0% / 0,00 / −12% | +3,2% / +2,2% / 0,32 / −16% | +1,7% / +0,8% / 0,24 / **−8%** | +0,24 |
+| 2014–26 | +1,8% / +0,7% / 0,25 / −13% | +4,6% / +3,3% / 0,46 / −16% | +3,3% / +2,1% / 0,44 / **−7%** | +0,23 |
+| anos > CDI (2010–26 / 2014–26) | 53% / 62% | 65% / 62% | **71% / 77%** | |
+
+**Campeão com mais ações** (N empresas mais negociadas por ano, causal, R$1 mi,
+R$4,90/ordem, banda 15%): **piora com N** — alpha 2010–26 −0,2% (N=5), −1,2% (10),
+−1,4% (15), −1,7% (20); 2014–26 +2,0%, +0,5%, −0,5%, −0,9%; Sh/CDI cai junto; maxDD
+−13% → −5%. As ações brasileiras andam juntas: da 6ª à 20ª não trazem tendência
+independente, só ruído e custo (slippage de 1 tick pesa mais em papel barato). A
+diversificação que funciona é **entre classes de ativo**, não dentro da bolsa daqui.
+
+**Veredito:** a alocação tática (Faber, 3 ETFs, mensal) **supera o campeão** nas duas
+janelas em que ambos existem (+3,4 e +2,8 p.p. a.a.) e é robusta ao parâmetro, com
+~7 ordens por ano — barata e simples (dá para fazer à mão uma vez por mês). Não é
+"ganho consistente" no sentido de ganhar do CDI todo ano, e parte do número depende
+do dólar e do S&P de 2016–2025. A carteira meio a meio (campeão + alocação tática) é a
+mais estável de tudo que foi testado: queda máxima −7 a −8%, 71–77% dos anos acima
+do CDI.
+
 ---
 
 ## CAMPEÃO
@@ -938,6 +1011,10 @@ separado do sistema — não uma regra do programa.
 - **Refazer as pesquisas antigas no painel da B3**: tudo antes do §23 usou Yahoo e
   cestas/universos de hoje (§2–§21). As reprovações continuam reprovadas (o viés só
   infla), mas qualquer candidato novo deve ser testado direto no painel causal.
+- **Alocação tática (§25) no ar**: se for usar, falta um script mensal que diga o que
+  comprar/vender (sinal de fim de mês + valores em R$ para o capital) e decidir se é
+  robô ou manual (~7 ordens por ano). Testar também com os pesos por risco (inverso
+  da vol) como próxima hipótese, fixada antes de olhar.
 - **Hipóteses para testar à frente** (não escolher com os dados de 2013–26): momentum
   12-1 sozinho e baixa vol no universo causal pareceram melhores que o combinado com
   as reversões.

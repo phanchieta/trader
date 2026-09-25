@@ -24,6 +24,16 @@ Pré-imposto. Rodando no paper-trade da conta demo.
 > no início de cada ano) e dados da B3: **CDI +0,6% pós-IR em 2014–26, CDI −1,1% em
 > 2010–26**. O modelo de fatores sem viés de sobrevivência fica no CDI.
 
+## Alocação tática (§25) — supera o campeão
+
+Ibovespa (BOVA11), S&P 500 em reais (IVVB11) e ouro (GOLD11), 1/3 cada, só se o mês
+fechou acima da média de 10 meses; senão a fatia fica no CDI. Rebalanceamento mensal,
+~7 ordens por ano. Com custos reais: **CDI +3,2% a.a. em 2010–26 (campeão causal:
+−0,2%) e +4,6% em 2014–26 (campeão: +1,8%)**, queda máxima −16 a −18%. O ganho vem da
+diversificação internacional em reais (Ibov x S&P com correlação −0,05); não ganha do
+CDI todo ano (57% dos anos em 2005–26; 2005–15 ficou no CDI). Meio a meio com o
+campeão: queda máxima −7 a −8% e 71–77% dos anos acima do CDI.
+
 ## Scripts (rodar da raiz do repo)
 
 **Dados** — `pull_daily` `pull_basket` `pull_universe` `pull_factor_universe`
@@ -32,7 +42,8 @@ Pré-imposto. Rodando no paper-trade da conta demo.
 `pull_etfs` (BOVA11 — abertura real; a do ^BVSP no Yahoo é falsa) `pull_cotahist` +
 `build_options_db` (séries históricas da B3 2008–2026: todos os negócios, opções com
 bid/ask, inclusive ações deslistadas) `build_stocks_db` (todas as ações do lote padrão
-para o painel sem viés)
+para o painel sem viés) `pull_taa` (BOVA11, IVVB11, GOLD11, SMAL11 + referências longas
+em reais para a alocação tática)
 
 **Pesquisa** — `research_strategies` (trend family + vol-target) ·
 `research_cross_sectional` (momentum cross-sectional — falhou) · `research_futures`
@@ -51,7 +62,9 @@ fechamento em vez da abertura — +0,1 a +0,2% a.a., ruído) · `research_option
 — sem prêmio de volatilidade na média) · `research_survivorship` (modelo de fatores
 com todas as ações da B3, inclusive deslistadas — fica no CDI) · `research_champion_bias`
 (campeão com cesta escolhida só com o que se sabia — perde a maior parte do alpha) ·
-`compare_horizons` `deep_dive` `validate` `validate_intraday`
+`research_taa` (alocação tática Ibov/S&P/ouro com filtro de 10 meses — supera o campeão)
+· `research_champion_breadth` (campeão com 10–20 ações — piora; ações brasileiras andam
+juntas) · `compare_horizons` `deep_dive` `validate` `validate_intraday`
 
 **Campeão** — `stress_champion` (robustez) · `champion_vs_cdi` (alpha sobre o CDI
 por nível de risco) · `optimize_champion` (otimização do sizing)
@@ -127,6 +140,8 @@ arquivo `.env` (na raiz, fora do git) e teste com `python scripts/test_telegram.
 | `trader/seasonal/` | `calendar` (pregão do mês, janela da virada), `timing` (estar ou não posicionado, execução no leilão de fechamento ou na abertura) |
 | `trader/options/` | `bs` (Black-Scholes, vol implícita), `chain` (vencimentos mensais, strike com livro são), `writer` (venda coberta, put coberta por caixa, trava) |
 | `trader/data/b3_panel.py` | painel de todas as ações da B3 pelo COTAHIST: ajuste de desdobramento/grupamento/bonificação/cisão pelas marcas "ex", provento estimado, retorno total |
+| `trader/allocation/` | `series` (ETF emendado com a referência longa), `signals` (Faber, dual momentum, fixa), `engine` (rebalanceamento mensal, CDI no caixa, custo por ordem, banda) |
+| `trader/backtest/champion.py` | cesta causal (N mais negociadas por ano) e campeão sobre o painel da B3 |
 | `scripts/` | pontos de entrada |
 | `tests/` | custos + causalidade do sinal |
 
