@@ -72,8 +72,15 @@ por nível de risco) · `optimize_champion` (otimização do sizing)
 **Ao vivo** — `check_corretora` · `demo_round_trip` · `paper_trade` (campeão;
 dry-run, `--send` envia) · `paper_blend` (blend campeão+fatores; estado próprio
 em `data/blend_state.json`) · `paper_blend_sim` (blend simulado, sem MT5, roda
-junto do campeão real) · `compare_paper` (campeão real vs blend sim vs CDI) ·
-`paper_report` · `collect_intraday`
+junto do campeão real) · `paper_taa_sim` (alocação tática simulada com R$10 mil,
+avisa no Telegram quando rebalanceia) · `taa_signal` (o que ter em carteira neste mês,
+com cotas e valores para o seu capital — uso manual) · `compare_paper` (campeão real
+vs blend sim vs alocação tática sim vs CDI) · `paper_report` · `collect_intraday`
+
+```bash
+python scripts/taa_signal.py --capital 10000                        # carteira-alvo do mês
+python scripts/taa_signal.py --holdings BOVA11=18,IVVB11=7 --cash 350  # ordens a partir da posição
+```
 
 O `paper_blend`/`paper_blend_sim` leem os parquets do universo de fatores —
 mantenha `pull_factor_universe.py` + `pull_futures_proxy.py` rodando (cron diário).

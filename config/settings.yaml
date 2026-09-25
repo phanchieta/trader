@@ -92,6 +92,14 @@ blend:
   factor_quintile: 0.20     # top 20% do score de fatores (quintil)
   # sleeve de fatores rebalanceia por trimestre-calendário; vol-target diário
 
+taa:
+  # alocação tática (§25): 1/N em cada ETF acima da média de N meses; o resto no CDI
+  etfs: [BOVA11, IVVB11, GOLD11]
+  sma_months: 10
+  band: 0.20            # só negocia se o sinal mudou ou o peso desviou mais que isso
+  cost_bps: 5.0         # taxa B3 + slippage por ponta; a corretagem vem de costs
+  sim_capital: 10000    # capital do simulador diário (o plano do usuário)
+
 share_classes:
   # pares de classes da mesma empresa [A, B]; spread = log(A) - log(B)
   # ON x PN, ou unit x PN quando a unit é a classe líquida (um par por empresa)

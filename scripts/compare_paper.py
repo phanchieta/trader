@@ -1,6 +1,6 @@
-"""Campeão (paper-trade REAL na demo) vs Blend (simulado, paper_blend_sim.py) vs CDI.
-Alinha as duas curvas pelo início comum e mostra retorno acumulado, drawdown e
-alpha sobre o CDI. Rodar quando quiser comparar "conservador vs mais risco".
+"""Campeão (paper-trade REAL na demo) vs Blend (simulado, paper_blend_sim.py) vs
+alocação tática (simulada, paper_taa_sim.py) vs CDI. Cada curva desde o próprio início:
+retorno acumulado, retorno acima do CDI na mesma janela e drawdown.
 """
 from __future__ import annotations
 
@@ -41,6 +41,9 @@ rows = [("campeão (real)", champ)]
 blend_p = DATA / "blend_sim_equity.csv"
 if blend_p.exists():
     rows.append(("blend (sim)", _curve(blend_p)))
+taa_p = DATA / "taa_sim_equity.csv"
+if taa_p.exists():
+    rows.append(("aloc. tática (sim)", _curve(taa_p)))
 
 MIN_DIAS_CAGR = 60      # anualizar com menos que isso é ruído, não sinal
 
@@ -59,4 +62,5 @@ start = min(eq.index[0] for _, eq in rows)
 print(f"\ninício comum: {start.date()} | hoje: {pd.Timestamp.today().date()}")
 print(f"CAGR/alpha só aparece com >= {MIN_DIAS_CAGR} dias corridos — antes disso, "
       "anualizar 2 semanas é ruído.")
-print("campeão = equity da conta demo (paper_trade.py) · blend = paper_blend_sim.py")
+print("campeão = equity da conta demo (paper_trade.py) · blend = paper_blend_sim.py · "
+      "aloc. tática = paper_taa_sim.py (R$10 mil)")

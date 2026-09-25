@@ -906,6 +906,15 @@ real cai para ~+2,5–3,5% a.a. Custo de fundo/Tesouro para guardar o caixa: −
   `trader-blend-sim` agendada (dias úteis 18h30) pra rodar de verdade daqui pra
   frente. Comparação de fato só fica útil com as duas rodando diariamente por
   algumas semanas.
+- **Alocação tática no ar (2026-09-25)**: `scripts/paper_taa_sim.py` roda na mesma
+  tarefa `trader-blend-sim` (18h30), com R$10 mil simulados (`taa.sim_capital`, o plano
+  do usuário), CDI no caixa, 5 bps + R$4,90 por ordem, banda de 20%; no primeiro pregão
+  de cada mês rebalanceia pelo sinal do mês fechado e manda as ordens no Telegram.
+  Estado em `data/taa_sim.json`, curva em `data/taa_sim_equity.csv`, e entra no
+  `compare_paper.py`. Primeira carteira (sinal de agosto/2026: BOVA11 e IVVB11 acima da
+  média de 10 meses, GOLD11 abaixo): 18 BOVA11 + 7 IVVB11 + R$3.560 no CDI.
+  `scripts/taa_signal.py` dá a carteira-alvo e as ordens para qualquer capital, para
+  operar à mão. ETFs têm lote de 1 cota no MT5 da XP.
 
 ## Lições transferíveis
 
