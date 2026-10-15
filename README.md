@@ -16,8 +16,9 @@
 > - Custos, emolumentos e regras de IR mudam: confira com a sua corretora, a B3 e
 >   um contador.
 >
-> O software é fornecido "como está", sem garantia de nenhum tipo. O uso é por sua
-> conta e risco; o autor não se responsabiliza por perdas.
+> O software é fornecido "como está", sem garantia de nenhum tipo (licença MIT, ver
+> [`LICENSE`](LICENSE)). O uso é por sua conta e risco; o autor não se
+> responsabiliza por perdas.
 
 Programa de trend swing em ações da B3. Ver **`RESEARCH_LOG.md`** para o histórico
 completo da pesquisa (o que foi testado e os vereditos).
