@@ -17,6 +17,10 @@ venv/
 .vscode/
 .idea/
 
-# permissões locais do Claude Code (da máquina, não do projeto)
-.claude/settings.json
-.claude/settings.local.json
+# configurações locais do assistente (da máquina, não do projeto)
+.claude/
+
+# indicador MQL5 de terceiros (Guilherme Santos, sem licença de redistribuição);
+# o port em Python está em trader/strategy/donchian_fibo.py
+Donchian_fibo/
+Donchian_fibo.zip

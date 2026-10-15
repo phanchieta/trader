@@ -1,5 +1,24 @@
 # trader — trade sistemático B3 (MT5 + Python)
 
+> [!WARNING]
+> **Projeto didático, feito com ajuda de IA. Não é recomendação de investimento.**
+>
+> O código, os backtests e o `RESEARCH_LOG.md` foram desenvolvidos com auxílio de
+> um assistente de IA, como exercício de estudo de trade sistemático. Podem conter
+> erros de lógica, de dados, de custos ou de impostos que não foram percebidos.
+>
+> - Resultado de backtest não garante resultado futuro, mesmo com validação fora da
+>   amostra. Viés de sobrevivência, dados do Yahoo e custos estimados podem inflar
+>   os números (ver §23 do `RESEARCH_LOG.md`).
+> - **Tome muito cuidado antes de colocar dinheiro real.** Rode em conta demo,
+>   entenda cada linha do que vai enviar ordens e comece com um valor que você
+>   aceita perder por inteiro.
+> - Custos, emolumentos e regras de IR mudam: confira com a sua corretora, a B3 e
+>   um contador.
+>
+> O software é fornecido "como está", sem garantia de nenhum tipo. O uso é por sua
+> conta e risco; o autor não se responsabiliza por perdas.
+
 Programa de trend swing em ações da B3. Ver **`RESEARCH_LOG.md`** para o histórico
 completo da pesquisa (o que foi testado e os vereditos).
 
