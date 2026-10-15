@@ -26,9 +26,11 @@ completo da pesquisa (o que foi testado e os vereditos).
 ## Setup
 
 ```bash
-conda activate trade                       # env com pandas/MetaTrader5/lightgbm/...
-pip install -e ".[mt5,ml,dev]"
+conda env create -f environment.yml        # cria o env "trade" com as versões testadas
+conda activate trade
 ```
+
+Sem conda: `pip install -e ".[mt5,ml,dev]"` (o `mt5` só instala no Windows).
 
 ## CAMPEÃO
 
