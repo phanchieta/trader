@@ -56,6 +56,16 @@ diversificação internacional em reais (Ibov x S&P com correlação −0,05); n
 CDI todo ano (57% dos anos em 2005–26; 2005–15 ficou no CDI). Meio a meio com o
 campeão: queda máxima −7 a −8% e 71–77% dos anos acima do CDI.
 
+![Patrimônio: alocação tática, Ibovespa e CDI](docs/img/equity.png)
+
+![Quedas desde o pico](docs/img/drawdown.png)
+
+![Ganho sobre o CDI por ano](docs/img/excess_by_year.png)
+
+Os gráficos são gerados por `python scripts/make_readme_charts.py` (2005–2026, R$100 mil,
+pré-imposto). Ressalva honesta: boa parte do ganho vem de 2019–2020 e 2024; em 2022 a
+estratégia ficou 24 pontos abaixo do CDI.
+
 ## Scripts (rodar da raiz do repo)
 
 **Dados** — `pull_daily` `pull_basket` `pull_universe` `pull_factor_universe`
